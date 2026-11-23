@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.claude/skills/docs-architect/scripts/hook_sync.py\" --docs-root \"docs\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
