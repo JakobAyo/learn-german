@@ -22,6 +22,8 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 
 ## Contents
 
-- (empty)
+- [CI and releases](ci-and-releases.md) `[draft]` — CI jobs that gate main, repository settings, the Conventional Commits PR-title rule, and how release-please produces versions, tags and CHANGELOG.md.
+- [Coding conventions](coding-conventions.md) `[draft]` — Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
+- [Testing strategy](testing-strategy.md) `[draft]` — Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 
 <!-- docs-index:end -->

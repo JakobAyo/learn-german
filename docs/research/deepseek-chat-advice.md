@@ -1,8 +1,8 @@
 ---
 title: "DeepSeek chat: chunks and sentence transformation"
-summary: Summary and critique of the DeepSeek advice: mine Nomen-Verb-Verbindungen with spaCy, cloze and transformation cards via genanki.
+summary: "Summary and critique of the DeepSeek advice: mine Nomen-Verb-Verbindungen with spaCy, cloze and transformation cards via genanki."
 status: active
-updated: 2026-11-23
+updated: 2026-11-24
 ---
 
 # DeepSeek chat: chunks and sentence transformation
@@ -70,14 +70,14 @@ Gaps and corrections:
 
 ## Candidate decisions
 
-Each of these becomes a record in `decisions/` once accepted:
+All of these were settled on 2026-11-24; see [Requirements](../product/requirements.md):
 
-1. Target unit: chunks (Nomen-Verb-Verbindungen first) instead of single words.
-2. Extraction method: spaCy dependency parse plus a light-verb whitelist.
-3. First sources: news articles, YouTube subtitles, or both.
-4. Export: `genanki` `.apkg` files versus live AnkiConnect.
-5. Card types: chunk cloze first; transformation cards second.
-6. Translation, audio and exercise generation: which provider, if any.
+1. Target unit: chunks, Nomen-Verb-Verbindungen first. Accepted in [0008](../decisions/0008-make-chunk-extractors-pluggable-starting-with-nvv.md).
+2. Extraction method: spaCy dependency parse plus a light-verb whitelist. Accepted in [0008](../decisions/0008-make-chunk-extractors-pluggable-starting-with-nvv.md).
+3. First sources: news article URLs and local files; YouTube subtitles deferred.
+4. Export: live AnkiConnect, not `genanki`. See [0003](../decisions/0003-push-notes-live-through-ankiconnect.md).
+5. Card types: transformation and translation prompt; chunk cloze dropped. See [0006](../decisions/0006-use-transformation-and-translation-prompt-cards.md).
+6. Generation: an LLM provider interface, Claude API first; no audio in v1. See [0004](../decisions/0004-generate-card-content-through-a-pluggable-llm-provider.md).
 
 ## Related
 

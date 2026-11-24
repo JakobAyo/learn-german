@@ -2,7 +2,7 @@
 title: Learning goals
 summary: B2 to C1 goal, the two core weaknesses (word finding, error-free sentences) and why Anki is the study channel.
 status: active
-updated: 2026-11-23
+updated: 2026-11-24
 ---
 
 # Learning goals
@@ -38,10 +38,11 @@ Reach a solid C1 as efficiently as possible. Efficiency beats breadth: study tim
 
 ## Open questions
 
-- Which input sources come first: news articles, video subtitles, or both? See `data/` once decided.
-- Should the learner's own corrected writing become a source later? It would be the most direct evidence of a gap, but neither the learner nor the DeepSeek chat has asked for it yet.
-- How is "already known" measured: a frequency cut-off, an imported known-words list, or the existing Anki collection?
+- Should the learner's own corrected writing become a source later? It would be the most direct evidence of a gap. The ingest interface leaves room for it (see [Requirements](requirements.md)).
+- How is "already known" measured: a frequency cut-off, an imported known-words list, or the existing Anki collection? Deferred: v1 does not filter, and the learner will judge from the first results which filter is needed.
 - What daily review budget is sustainable? See `learning-design/`.
+
+Resolved: first sources are news article URLs and local files (see [Requirements](requirements.md)).
 
 ## Related
 

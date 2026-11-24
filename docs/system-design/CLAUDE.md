@@ -23,6 +23,7 @@ Extraction pipeline: ingest, NLP processing, filtering and ranking, card generat
 
 ## Contents
 
-- (empty)
+- [Code architecture](code-architecture.md) `[draft]` — Ports-and-adapters layout of the Python package, the dependency rule, every port with its v1 adapter and fake, and the patterns used where.
+- [Pipeline](pipeline.md) — Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 
 <!-- docs-index:end -->

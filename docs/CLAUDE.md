@@ -5,7 +5,7 @@ summary: Index of the documentation tree. Start here to find which folder holds 
 
 # learn-german documentation
 
-A personal extraction tool that mines German source material (news articles, video subtitles) for chunks, chiefly Nomen-Verb-Verbindungen, and turns them into Anki cloze and sentence-transformation cards for spaced repetition. Its goal is to move a B2 learner towards C1 by widening the words they actually use and improving how they build sentences, rather than by adding passive word lists.
+A personal command-line tool that mines German source material (news articles, local files) for chunks, chiefly Nomen-Verb-Verbindungen, and pushes sentence-transformation and translation-prompt cards into Anki for spaced repetition. Its goal is to move a B2 learner towards C1 by widening the words they actually use and improving how they build sentences, rather than by adding passive word lists.
 
 ## How to use this index
 
@@ -34,12 +34,33 @@ Input sources, frequency lists, known-words store and the extracted-item data mo
 Numbered decision records (ADRs). Why the project is the way it is, one decision per file.
 
 - [Adopt a concern-based documentation structure](decisions/0001-adopt-documentation-structure.md) — Documentation is split into one folder per concern, each indexed by a CLAUDE.md, with decisions recorded as numbered records.
+- [Build a single-user Python CLI in a public repository](decisions/0002-build-a-single-user-python-cli-in-a-public-repo.md) — The tool is a Python 3.12+ CLI managed with uv, used by one person, published as a public repo with nothing personal in it.
+- [Push notes live through AnkiConnect into a tool-owned deck](decisions/0003-push-notes-live-through-ankiconnect.md) — Notes go into the running Anki desktop app through AnkiConnect, into a deck and versioned note types the tool owns, instead of .apkg files.
+- [Generate card content through a pluggable LLM provider, Claude API first](decisions/0004-generate-card-content-through-a-pluggable-llm-provider.md) — Translations and model answers come from an LLM provider interface; the Claude API is the first adapter, with claude -p and DeepSeek addable later.
+- [Push cards automatically, with tagging and dry run as safeguards](decisions/0005-push-cards-automatically-with-tagging-and-dry-run.md) — There is no review step; generated notes go straight to Anki, each tagged with provider, model and run ID, and --dry-run previews a run.
+- [Use transformation and translation-prompt cards, not chunk cloze](decisions/0006-use-transformation-and-translation-prompt-cards.md) — v1 builds two production card types, sentence transformation and translation prompt, and drops the chunk cloze proposed in the DeepSeek chat.
+- [Keep local state in SQLite](decisions/0007-keep-local-state-in-sqlite.md) — A local SQLite database stores processed sources, all extracted candidates and cached LLM output, outside the repository.
+- [Make chunk extractors and source adapters pluggable, starting with NVV](decisions/0008-make-chunk-extractors-pluggable-starting-with-nvv.md) — Extraction and ingest are plug-in interfaces; v1 ships the Nomen-Verb-Verbindung extractor and the news-URL and local-file sources.
+- [Deduplicate by chunk key, rank candidates and cap new notes per run](decisions/0009-deduplicate-by-chunk-key-and-cap-new-notes-per-run.md) — Chunks already in the deck are skipped by lemma key; a configurable cap limits new notes per run, ranked by occurrences in the learner's sources.
+- [License the code under MIT](decisions/0010-license-the-code-under-mit.md) — The public repository is released under the MIT licence, the shortest permissive option.
+- [Normalise NVV chunk keys as noun, preposition, verb](decisions/0011-normalise-nvv-chunk-keys-as-noun-prep-verb.md) — An NVV's permanent key is the lemmas of noun, preposition, optional sich, and verb, joined by |, without articles or negation.
+- [Make both cards practise the chunk, two notes per chunk](decisions/0012-make-both-cards-practise-the-chunk.md) — Both cards drill the chunk on a shortened sentence; one note of each type per chunk, and the cap counts chunks.
+- [Fetch articles politely, without bypassing paywalls](decisions/0013-fetch-articles-politely-without-bypassing-paywalls.md) — The news-URL adapter fetches only the given URL, respects robots.txt and fails clearly on paywalls; a local .txt file is the fallback.
+- [Keep progress when a run fails partway](decisions/0014-keep-progress-when-a-run-fails-partway.md) — A failing candidate stays pending with its error recorded, the run continues, and a summary lists failures; the next run retries them.
+- [Set v1 run defaults, Claude Opus 5.5, ten chunks, required hint language](decisions/0015-set-v1-run-defaults.md) — The default model is Claude Opus 5.5, the default cap is 10 chunks per run, and there is no default hint language; the user must set one.
+- [Use standard Python tooling for CLI, types, fetching and NLP](decisions/0016-use-standard-python-tooling.md) — typer for the CLI, mypy --strict, httpx and trafilatura for fetching, spaCy de_core_news_lg, a light-verb data file, timestamp run IDs and a learn-german deck.
+- [Split the CLI into add and sync, with extraction at add time](decisions/0017-split-the-cli-into-add-and-sync.md) — add fetches and extracts sources into SQLite; sync ranks, deduplicates, generates and pushes up to the cap; reextract rebuilds candidates from stored text.
+- [Structure the code as ports and adapters with a composition root](decisions/0018-structure-code-as-ports-and-adapters.md) — Pure domain, use cases against Protocol ports, one adapter per external system, wired in one composition root; layering enforced by import-linter.
+- [Gate main with required CI checks and branch protection](decisions/0019-gate-main-with-ci-checks.md) — main accepts only squash-merged PRs that pass lint, lock, mypy, import-linter, pytest with coverage, NLP tests, docs validation and a PR-title check.
+- [Version with Conventional Commits and release-please](decisions/0020-version-with-conventional-commits-and-release-please.md) — Conventional Commit PR titles drive SemVer; release-please keeps a release PR that bumps pyproject.toml and CHANGELOG.md and tags on merge.
 
 ### [development/](development/CLAUDE.md)
 
 Local setup, dependencies and NLP models, and how to run the extractor.
 
-- (empty)
+- [CI and releases](development/ci-and-releases.md) `[draft]` — CI jobs that gate main, repository settings, the Conventional Commits PR-title rule, and how release-please produces versions, tags and CHANGELOG.md.
+- [Coding conventions](development/coding-conventions.md) `[draft]` — Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
+- [Testing strategy](development/testing-strategy.md) `[draft]` — Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 
 ### [integrations/](integrations/CLAUDE.md)
 
@@ -51,13 +72,15 @@ External systems: Anki, translation, audio and any LLM; how each is called and f
 
 Card types, what each trains, Anki deck and note-type layout, review settings.
 
-- (empty)
+- [Note types](learning-design/note-types.md) — Deck, the two v1 note types and their fields, card fronts and backs, and tags; fields are hard to change once notes exist.
 
 ### [product/](product/CLAUDE.md)
 
 Learning goals, scope, non-goals and roadmap of the extractor.
 
 - [Learning goals](product/learning-goals.md) — B2 to C1 goal, the two core weaknesses (word finding, error-free sentences) and why Anki is the study channel.
+- [Requirements](product/requirements.md) — Functional and non-functional requirements, scope, non-goals and deferred features, agreed before implementation starts.
+- [Roadmap](product/roadmap.md) — Implementation milestones M0 to M8 from an empty repo to v1.0.0, each with deliverables, tests, CI changes and a done-when check.
 
 ### [research/](research/CLAUDE.md)
 
@@ -69,6 +92,7 @@ Experiments, evaluations and summaries of outside advice that inform decisions.
 
 Extraction pipeline: ingest, NLP processing, filtering and ranking, card generation, export.
 
-- (empty)
+- [Code architecture](system-design/code-architecture.md) `[draft]` — Ports-and-adapters layout of the Python package, the dependency rule, every port with its v1 adapter and fake, and the patterns used where.
+- [Pipeline](system-design/pipeline.md) — Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 
 <!-- docs-index:end -->
