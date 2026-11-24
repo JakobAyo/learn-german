@@ -60,7 +60,7 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 
 **Tests:** one CLI smoke test (`--version` exits 0 and prints the package version).
 
-**Decisions:** [0018](../decisions/0018-structure-code-as-ports-and-adapters.md), [0019](../decisions/0019-gate-main-with-ci-checks.md), [0020](../decisions/0020-version-with-conventional-commits-and-release-please.md).
+**Decisions:** [0018](../decisions/0018-structure-code-as-ports-and-adapters.md), [0019](../decisions/0019-gate-main-with-ci-checks.md), [0020](../decisions/0020-version-with-conventional-commits-and-release-please.md), [0021](../decisions/0021-settle-m0-build-and-release-mechanics.md).
 
 **Done when**
 

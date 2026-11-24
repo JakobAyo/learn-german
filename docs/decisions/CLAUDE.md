@@ -82,5 +82,6 @@ Status meanings for records: `draft` = proposed and not yet agreed, `active` = a
 - [Structure the code as ports and adapters with a composition root](0018-structure-code-as-ports-and-adapters.md) — Pure domain, use cases against Protocol ports, one adapter per external system, wired in one composition root; layering enforced by import-linter.
 - [Gate main with required CI checks and branch protection](0019-gate-main-with-ci-checks.md) — main accepts only squash-merged PRs that pass lint, lock, mypy, import-linter, pytest with coverage, NLP tests, docs validation and a PR-title check.
 - [Version with Conventional Commits and release-please](0020-version-with-conventional-commits-and-release-please.md) — Conventional Commit PR titles drive SemVer; release-please keeps a release PR that bumps pyproject.toml and CHANGELOG.md and tags on merge.
+- [Settle M0 build and release mechanics](0021-settle-m0-build-and-release-mechanics.md) — uv_build backend, uv.lock refreshed by the release workflow, pre-commit on the locked ruff, and layer stubs so import-linter enforces 0018 now.
 
 <!-- docs-index:end -->

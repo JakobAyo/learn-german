@@ -1,0 +1,120 @@
+[project]
+name = "learn-german"
+version = "0.0.0"
+description = "Mine German texts for Nomen-Verb-Verbindungen and push production cards into Anki."
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.15",
+]
+
+[project.scripts]
+learn-german = "learn_german.cli.app:main"
+
+[dependency-groups]
+dev = [
+    "import-linter>=2.1",
+    "mypy>=1.13",
+    "pre-commit>=4.0",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pytest-socket>=0.7",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["uv_build>=0.9,<0.14"]
+build-backend = "uv_build"
+
+# --- ruff ---------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+# Vendored from the docs-architect skill (0019); refreshed by hand, not edited.
+extend-exclude = ["tools/docs"]
+force-exclude = true
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",  # pycodestyle, pyflakes
+    "I",            # import order
+    "B",            # bugbear
+    "UP",           # pyupgrade
+    "SIM",          # simplify
+    "RUF",          # ruff-specific
+    "PTH",          # pathlib over os.path
+    "T20",          # no print outside cli/
+    "BLE",          # no blind except
+    "S",            # bandit subset
+    "C4",           # comprehensions
+    "PT",           # pytest style
+    "ERA",          # commented-out code
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/learn_german/cli/**" = ["T20"]
+"tests/**" = ["S101"]
+
+# --- mypy ---------------------------------------------------------------
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "tests"]
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+# --- pytest -------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config", "--disable-socket", "-ra"]
+markers = [
+    "nlp: needs the real spaCy model de_core_news_lg (CI job nlp)",
+]
+xfail_strict = true
+
+# --- coverage -----------------------------------------------------------
+
+[tool.coverage.run]
+branch = true
+source = ["learn_german"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "class .*\\(Protocol\\):",
+    "@(abc\\.)?abstractmethod",
+    "if __name__ == .__main__.:",
+]
+
+# --- import-linter (0018) -----------------------------------------------
+
+[tool.importlinter]
+root_package = "learn_german"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers follow the dependency rule"
+type = "layers"
+containers = ["learn_german"]
+layers = [
+    "cli",
+    "bootstrap",
+    "application | adapters",
+    "ports",
+    "domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain and application do no I/O"
+type = "forbidden"
+source_modules = ["learn_german.domain", "learn_german.application"]
+forbidden_modules = ["typer", "click"]

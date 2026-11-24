@@ -67,7 +67,7 @@ States what the extractor must do and the constraints it must respect, so that t
 ## Quality and CI
 
 - **R26. Stack.** Python 3.12+ with `uv` for dependency management; MIT licence. Libraries and tools are fixed in [0016](../decisions/0016-use-standard-python-tooling.md). ([0002](../decisions/0002-build-a-single-user-python-cli-in-a-public-repo.md), [0010](../decisions/0010-license-the-code-under-mit.md))
-- **R27. CI on every push** (GitHub Actions): `ruff` lint and format check, a strict type check, `pytest`, and the docs validator.
+- **R27. CI on every push** (GitHub Actions): `ruff` lint and format check, a strict type check, `pytest`, and the docs validator. Extended by [0019](../decisions/0019-gate-main-with-ci-checks.md) with the lock check, import-linter, coverage, NLP tests and a PR-title check.
 - **R28. CI needs no secrets and no Anki.** AnkiConnect and the LLM are mocked in tests. Test fixtures use synthetic or freely licensed German text, never copied news articles.
 
 ## Non-goals

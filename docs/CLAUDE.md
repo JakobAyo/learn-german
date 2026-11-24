@@ -53,6 +53,7 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Structure the code as ports and adapters with a composition root](decisions/0018-structure-code-as-ports-and-adapters.md) — Pure domain, use cases against Protocol ports, one adapter per external system, wired in one composition root; layering enforced by import-linter.
 - [Gate main with required CI checks and branch protection](decisions/0019-gate-main-with-ci-checks.md) — main accepts only squash-merged PRs that pass lint, lock, mypy, import-linter, pytest with coverage, NLP tests, docs validation and a PR-title check.
 - [Version with Conventional Commits and release-please](decisions/0020-version-with-conventional-commits-and-release-please.md) — Conventional Commit PR titles drive SemVer; release-please keeps a release PR that bumps pyproject.toml and CHANGELOG.md and tags on merge.
+- [Settle M0 build and release mechanics](decisions/0021-settle-m0-build-and-release-mechanics.md) — uv_build backend, uv.lock refreshed by the release workflow, pre-commit on the locked ruff, and layer stubs so import-linter enforces 0018 now.
 
 ### [development/](development/CLAUDE.md)
 
@@ -60,6 +61,7 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 
 - [CI and releases](development/ci-and-releases.md) `[draft]` — CI jobs that gate main, repository settings, the Conventional Commits PR-title rule, and how release-please produces versions, tags and CHANGELOG.md.
 - [Coding conventions](development/coding-conventions.md) `[draft]` — Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
+- [Local setup](development/setup.md) — Clone, install with uv, enable pre-commit and run make check; what each make target runs and how to install a released version.
 - [Testing strategy](development/testing-strategy.md) `[draft]` — Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 
 ### [integrations/](integrations/CLAUDE.md)

@@ -28,7 +28,7 @@ branch ─► PR "feat: …" ─► CI jobs + PR-title check ─► squash merge
 | `lint` | `ruff check`, `ruff format --check`, `uv lock --check` | Bug-prone patterns, unused code, unformatted code, `pyproject.toml` changed without the lock |
 | `types` | `mypy --strict src tests`, `lint-imports` | Type errors; a layer importing what it must not ([Code architecture](../system-design/code-architecture.md)) |
 | `test` | `pytest -m "not nlp" --cov` | Logic regressions, coverage below 85 % |
-| `nlp` | `pytest -m nlp` with the spaCy model cached | Chunk key and extraction regressions (from M2) |
+| `nlp` | `pytest -m nlp` with the spaCy model cached | Chunk key and extraction regressions (added in M2; not in `ci.yml` yet) |
 | `docs` | `python tools/docs/validate_docs.py --docs-root docs` | Broken frontmatter, names or a stale docs index |
 
 Plus `pr-title.yml`: the PR title must be a Conventional Commit, because it becomes the squash commit that release-please reads.
@@ -113,10 +113,16 @@ Base config (`release-please-config.json`):
 }
 ```
 
-### Two pitfalls to solve in M0
+### Two pitfalls and how M0 solves them
 
-1. **`uv.lock` holds the project's own version.** A release PR that bumps only `pyproject.toml` fails `uv lock --check`. Fix it with a release-please `extra-files` TOML updater for the project's entry in `uv.lock`, or with a step in the release workflow that runs `uv lock` on the release branch and commits the result. M0 is done only when the release PR passes the lock check.
-2. **PRs opened with the default `GITHUB_TOKEN` do not trigger other workflows.** The release PR's required checks would never run, so it could not be merged. Give release-please a fine-grained token (`RELEASE_PLEASE_TOKEN`) limited to this repository, with contents and pull-request write access. It is the only secret in the repository and only the release workflow uses it; tests still need none (R28).
+1. **`uv.lock` holds the project's own version.** A release PR that bumps only `pyproject.toml` fails `uv lock --check`. Solved with a step in `release-please.yml`: whenever release-please creates or updates its PR, the workflow checks out the release branch, runs `uv lock` and pushes the result if it changed. This was chosen over a release-please `extra-files` TOML updater because the jsonpath filter over `uv.lock`'s `[[package]]` array depends on release-please's TOML parser internals, while `uv lock` is always right. M0 is done only when the release PR passes the lock check.
+2. **PRs opened with the default `GITHUB_TOKEN` do not trigger other workflows.** The release PR's required checks would never run, so it could not be merged. release-please and the lock-refresh push both use a fine-grained token, `RELEASE_PLEASE_TOKEN`, limited to this repository, with contents and pull-request write access. It is the only secret in the repository and only the release workflow uses it; tests still need none (R28).
+
+### One-time setup for releases
+
+1. Create a fine-grained personal access token: repository access *only this repository*; permissions *Contents: read and write*, *Pull requests: read and write*.
+2. Store it as the Actions secret `RELEASE_PLEASE_TOKEN`.
+3. Apply the [repository settings](#repository-settings) and mark `lint`, `types`, `test`, `docs` and `conventional-commit` as required checks (add `nlp` in M2).
 
 ## Installing a release
 
