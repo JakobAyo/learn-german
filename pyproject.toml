@@ -6,6 +6,8 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
+    "platformdirs>=4.3",
+    "pydantic-settings>=2.6",
     "typer>=0.15",
 ]
 
@@ -108,13 +110,30 @@ containers = ["learn_german"]
 layers = [
     "cli",
     "bootstrap",
+    "config",
     "application | adapters",
     "ports",
     "domain",
 ]
 
 [[tool.importlinter.contracts]]
-name = "Domain and application do no I/O"
+name = "Domain, ports and application do no I/O"
 type = "forbidden"
-source_modules = ["learn_german.domain", "learn_german.application"]
-forbidden_modules = ["typer", "click"]
+source_modules = ["learn_german.domain", "learn_german.ports", "learn_german.application"]
+# Extend as later milestones add I/O libraries (httpx, spacy, anthropic, ...).
+forbidden_modules = [
+    "typer",
+    "click",
+    "pydantic",
+    "pydantic_settings",
+    "platformdirs",
+    "dotenv",
+    "sqlite3",
+    "os",
+    "pathlib",
+]
+
+[[tool.importlinter.contracts]]
+name = "Adapters never import each other"
+type = "independence"
+modules = ["learn_german.adapters.*"]

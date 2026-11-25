@@ -2,7 +2,7 @@
 title: Testing strategy
 summary: Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 status: draft
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Testing strategy
@@ -26,7 +26,7 @@ States what is tested at which layer and with which doubles, so tests stay fast,
 
 - **Fakes over mocks.** Each port has one hand-written fake in `tests/fakes/` (for example `FakeAnkiGateway` holds an in-memory deck). A fake passes the same contract suite as the real adapter, so tests that use it can be trusted. `unittest.mock` is a last resort.
 - **No network.** `pytest-socket` disables sockets for every test. HTTP adapters get an `httpx.MockTransport`.
-- **No real home directory.** An autouse fixture points the XDG directories and the database at `tmp_path`.
+- **No real home directory or secrets.** An autouse fixture points HOME and the XDG directories at `tmp_path`, runs each test in an empty working directory (so a developer's `.env` is never read) and removes every `LEARN_GERMAN_*` and `ANTHROPIC_*` variable.
 - **Synthetic fixtures only.** German sentences and HTML pages are written by hand for the test. Never paste a real article (R28, 0002).
 - **Deterministic.** Run IDs come from `FixedClock`; ordering ties are broken explicitly; no sleeps.
 - **One behaviour per test**, named `test_<unit>_<behaviour>`, laid out as arrange, act, assert. Tables of cases use `pytest.mark.parametrize` with readable `ids`.

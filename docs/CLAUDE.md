@@ -27,7 +27,7 @@ A personal command-line tool that mines German source material (news articles, l
 
 Input sources, frequency lists, known-words store and the extracted-item data model.
 
-- (empty)
+- [Data model](data/data-model.md) — SQLite tables, columns and constraints, how chunk status is derived from pushed notes, and how schema migrations are numbered and applied.
 
 ### [decisions/](decisions/CLAUDE.md)
 
@@ -56,6 +56,8 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Settle M0 build and release mechanics](decisions/0021-settle-m0-build-and-release-mechanics.md) — uv_build backend, uv.lock refreshed by the release workflow, pre-commit on the locked ruff, and layer stubs so import-linter enforces 0018 now.
 - [Keep a long-lived develop branch](decisions/0022-keep-a-long-lived-develop-branch.md) — develop is a protected integration branch that survives merges; after each squash merge into main, main is merged back into develop.
 - [Release as features land, not once per milestone](decisions/0023-release-as-features-land.md) — M2 to M6 run as parallel tracks after M1, so 0.x versions count up as features merge and no longer map to milestones; 1.0.0 stays tied to M8.
+- [Read settings with pydantic-settings, layered flag, environment, .env and TOML](decisions/0024-read-settings-with-pydantic-settings.md) — pydantic-settings layers flags, LEARN_GERMAN_ variables, .env and config.toml; unknown TOML keys fail and the hint language is an ISO 639 code.
+- [Track note progress per chunk key, not per occurrence](decisions/0025-track-note-progress-per-chunk-key.md) — Candidates are occurrences without status; pushed notes and errors are stored per chunk key, and pending, partial or done is derived from them.
 
 ### [development/](development/CLAUDE.md)
 
@@ -63,6 +65,7 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 
 - [CI and releases](development/ci-and-releases.md) `[draft]` — CI jobs that gate main, repository settings, the Conventional Commits PR-title rule, and how release-please produces versions, tags and CHANGELOG.md.
 - [Coding conventions](development/coding-conventions.md) `[draft]` — Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
+- [Configuration](development/configuration.md) — Every setting with its default, environment variable and TOML key, where config.toml and .env are read from, and the order in which sources override each other.
 - [Local setup](development/setup.md) — Clone, install with uv, enable pre-commit and run make check; what each make target runs and how to install a released version.
 - [Testing strategy](development/testing-strategy.md) `[draft]` — Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 
