@@ -2,7 +2,7 @@
 title: Code architecture
 summary: Ports-and-adapters layout of the Python package, the dependency rule, every port with its v1 adapter and fake, and the patterns used where.
 status: draft
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Code architecture
@@ -18,6 +18,9 @@ Describes how the code is organised so that each seam in the Deferred table of [
            │
            ▼
       bootstrap  (composition root: reads config, wires adapters)
+           │
+           ▼
+         config  (settings: the only module that reads the environment)
        │      │
        ▼      ▼
  application  adapters  (sqlite, spacy/nvv, news-url, file, anthropic, ankiconnect)
@@ -30,21 +33,23 @@ Describes how the code is organised so that each seam in the Deferred table of [
          domain  (pure: value objects, entities, errors, rules)
 ```
 
-- `domain` imports only the standard library.
-- `application` imports `domain` and `ports`, never an adapter or an I/O library.
+- `domain` imports only the standard library, and not its I/O modules (`os`, `pathlib`, `sqlite3`).
+- `application` imports `domain` and `ports`, never an adapter, `config` or an I/O library.
 - `adapters` import `domain`, `ports` and their own third-party library. Adapters never import each other.
+- `config` may import `domain` (for `ConfigError`); only `bootstrap` and `cli` import `config`.
 - Only `bootstrap` and `cli` import adapters.
 
-The rule is enforced in CI by import-linter contracts in `pyproject.toml`, not by review.
+The rule is enforced in CI by three import-linter contracts in `pyproject.toml`, not by review: the layer order above, a forbidden-modules list for `domain`, `ports` and `application` (extended as milestones add I/O libraries), and independence of the packages under `adapters/`.
 
 ## Package layout
 
 ```
 src/learn_german/
   domain/
-    models.py            # ChunkKey, RunId, Source, Candidate, NoteDraft, RunSummary
+    models.py            # ChunkKey, RunId, Source, Candidate, ChunkState, PendingChunk,
+                         # CardRequest, CardContent, NoteDraft, RunSummary, enums
     errors.py            # LearnGermanError → FatalError | ItemError
-  ports.py               # all Protocols
+  ports.py               # all Protocols, including the repositories and UnitOfWork
   application/
     add_sources.py
     sync.py
@@ -57,7 +62,8 @@ src/learn_german/
     ranking/             # occurrence.py
     llm/                 # anthropic.py, caching.py, prompts/card_v1.md
     anki/                # client.py, gateway.py, note_types.py, templates/
-    storage/sqlite/      # uow.py, repositories.py, migrations/NNNN_*.sql
+    storage/sqlite/      # database.py, uow.py, repositories.py, migrations/NNNN_*.sql
+    clock.py             # SystemClock
   config.py
   bootstrap.py
   cli/
@@ -80,10 +86,12 @@ tools/
 | `Ranker` | `OccurrenceRanker` | not needed (pure) | R13 |
 | `LLMProvider` | `AnthropicProvider`, wrapped by `CachingProvider` | `FakeProvider` | R17 |
 | `AnkiGateway` | `AnkiConnectGateway` | `FakeAnkiGateway` (in-memory deck) | R19, R20 |
-| `UnitOfWork` and repositories | SQLite | SQLite `:memory:` (real code) | R24 |
+| `UnitOfWork` with `SourceRepository`, `CandidateRepository`, `ChunkStateRepository`, `LLMCacheRepository` | `SqliteUnitOfWork` | SQLite `:memory:` (real code) | R24 |
 | `Clock` | `SystemClock` | `FixedClock` | run IDs |
 
-Ports are `typing.Protocol`s, so adapters and fakes need no inheritance and mypy checks them structurally.
+Ports are `typing.Protocol`s, so adapters and fakes need no inheritance and mypy checks them structurally. The plug-in port signatures were set in M1 so M4 to M6 can be built in parallel; a milestone may refine its own port, and says so in its PR.
+
+`with uow:` is one transaction: it commits when the block ends normally and rolls back when it raises. Tables and the chunk status are in [Data model](../data/data-model.md).
 
 ## Patterns and where they apply
 

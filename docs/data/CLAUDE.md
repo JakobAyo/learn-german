@@ -23,6 +23,6 @@ Input sources, frequency lists, known-words store and the extracted-item data mo
 
 ## Contents
 
-- (empty)
+- [Data model](data-model.md) — SQLite tables, columns and constraints, how chunk status is derived from pushed notes, and how schema migrations are numbered and applied.
 
 <!-- docs-index:end -->
