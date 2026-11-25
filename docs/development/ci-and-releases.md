@@ -91,7 +91,7 @@ Before 1.0.0, a breaking change bumps the minor version instead of the major (`b
 ## Releases with release-please
 
 - `release-please.yml` runs on every push to `main`. It keeps one open release PR that bumps the version in `pyproject.toml` and adds a `CHANGELOG.md` section built from the squash commits since the last tag.
-- Merging the release PR creates the `vX.Y.Z` tag and a GitHub Release with the same notes.
+- Merging the release PR creates the `vX.Y.Z` tag and a GitHub Release with the same notes. `include-component-in-tag: false` keeps the tag plain; release-please's default would be `learn-german-vX.Y.Z`. 0.1.0 was released under that default name, so `v0.1.0` was added by hand on the same commit.
 - Cadence: merge the release PR once per milestone (see [Roadmap](../product/roadmap.md)), or earlier for an urgent fix.
 - 1.0.0 is forced with a `Release-As: 1.0.0` footer at M8.
 
@@ -103,6 +103,7 @@ Base config (`release-please-config.json`):
     ".": {
       "release-type": "python",
       "package-name": "learn-german",
+      "include-component-in-tag": false,
       "bump-minor-pre-major": true,
       "changelog-sections": [
         { "type": "feat", "section": "Features" },
