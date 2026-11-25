@@ -35,7 +35,9 @@ class SqliteUnitOfWork:
     def __enter__(self) -> Self:
         if self._connection.in_transaction:
             raise RuntimeError("a unit of work is already active on this connection")
-        self._connection.execute("BEGIN")
+        # IMMEDIATE takes the write lock now. A deferred BEGIN that reads and then writes can
+        # get "database is locked" at once, without busy_timeout, when another command writes.
+        self._connection.execute("BEGIN IMMEDIATE")
         return self
 
     def __exit__(
@@ -45,16 +47,25 @@ class SqliteUnitOfWork:
         tb: TracebackType | None,
     ) -> None:
         if exc is not None:
-            self._connection.execute("ROLLBACK")
+            self._rollback()
             if isinstance(exc, sqlite3.Error):
                 raise DatabaseError(f"A database write failed and was undone: {exc}") from exc
             return
         try:
             self._connection.execute("COMMIT")
         except sqlite3.Error as commit_exc:
-            if self._connection.in_transaction:
-                self._connection.execute("ROLLBACK")
+            self._rollback()
             raise DatabaseError(f"Saving to the database failed: {commit_exc}") from commit_exc
+
+    def _rollback(self) -> None:
+        # After disk-full, I/O errors or interrupts SQLite has already rolled back by itself,
+        # and a second ROLLBACK would raise and hide the original error.
+        if not self._connection.in_transaction:
+            return
+        try:
+            self._connection.execute("ROLLBACK")
+        except sqlite3.Error:
+            logger.warning("Rollback failed after an earlier error", exc_info=True)
 
     def close(self) -> None:
         """Close the connection. Call once, when the command ends."""

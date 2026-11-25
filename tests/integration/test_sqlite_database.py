@@ -8,6 +8,7 @@ import pytest
 from learn_german.adapters.storage.sqlite import SqliteUnitOfWork, open_database
 from learn_german.adapters.storage.sqlite.database import (
     Migration,
+    _apply,
     load_migrations,
     migrate,
     schema_version,
@@ -80,6 +81,51 @@ def test_failed_migration_keeps_previous_version(tmp_path: Path) -> None:
 
     assert schema_version(connection) == LATEST
     assert "half" not in _tables(connection)
+
+
+def test_migration_without_trailing_semicolon_applies(tmp_path: Path) -> None:
+    connection = _raw(tmp_path / "lg.db")
+    extra = Migration(LATEST + 1, "9999_extra.sql", "CREATE TABLE extra (a)")
+
+    assert migrate(connection, [*MIGRATIONS, extra]) == LATEST + 1
+    assert "extra" in _tables(connection)
+
+
+def test_migrate_uses_version_numbers_not_list_positions(tmp_path: Path) -> None:
+    connection = _raw(tmp_path / "lg.db")
+    migrate(connection, MIGRATIONS)
+    extra = Migration(LATEST + 1, "9999_extra.sql", "CREATE TABLE extra (a);")
+
+    assert migrate(connection, [extra]) == LATEST + 1
+    assert "extra" in _tables(connection)
+
+
+def test_migration_applied_meanwhile_by_another_process_is_skipped(tmp_path: Path) -> None:
+    path = tmp_path / "lg.db"
+    stale = _raw(path)
+    open_database(path).close()  # the other process migrates first
+
+    _apply(stale, MIGRATIONS[0])
+
+    assert schema_version(stale) == LATEST
+
+
+def test_unit_of_work_takes_the_write_lock_on_entry(tmp_path: Path) -> None:
+    path = tmp_path / "lg.db"
+    uow = SqliteUnitOfWork(open_database(path))
+    other = open_database(path)
+    other.execute("PRAGMA busy_timeout = 0")
+
+    with uow, pytest.raises(sqlite3.OperationalError, match="locked"):
+        other.execute("INSERT INTO chunk_errors VALUES ('rolle|spielen', 'm', 't')")
+
+
+def test_database_folder_that_cannot_be_created_is_refused(tmp_path: Path) -> None:
+    blocker = tmp_path / "not-a-folder"
+    blocker.write_text("x", encoding="utf-8")
+
+    with pytest.raises(DatabaseError, match="Cannot open the database"):
+        open_database(blocker / "lg.db")
 
 
 def test_database_newer_than_code_is_refused(tmp_path: Path) -> None:

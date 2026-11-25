@@ -113,10 +113,12 @@ def _validate_chunk_key(value: str) -> None:
     for part in parts:
         if not _LEMMA.fullmatch(part):
             raise ValueError(f"chunk key {value!r} has an invalid lemma {part!r}")
-        if part in _DROPPED_WORDS:
-            raise ValueError(f"chunk key {value!r} keeps {part!r}; articles and negation drop")
     noun, *middle, verb = parts
     prepositions = middle[:-1] if middle[-1:] == [_REFLEXIVE] else middle
+    # The verb is exempt: "einen" (to unite) is a verb lemma spelled like an article.
+    dropped = next((part for part in (noun, *prepositions) if part in _DROPPED_WORDS), None)
+    if dropped is not None:
+        raise ValueError(f"chunk key {value!r} keeps {dropped!r}; articles and negation drop")
     if _REFLEXIVE in (noun, verb, *prepositions):
         raise ValueError(f"chunk key {value!r} may hold 'sich' only directly before the verb")
     if len(prepositions) > 1:

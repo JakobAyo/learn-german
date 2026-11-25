@@ -128,6 +128,12 @@ def test_settings_hint_language_is_optional_until_required() -> None:
         settings.require_hint_language()
 
 
+def test_settings_treat_empty_hint_language_as_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "")
+
+    assert load_settings().hint_language is None
+
+
 def test_settings_require_hint_language_returns_it(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "en")
 

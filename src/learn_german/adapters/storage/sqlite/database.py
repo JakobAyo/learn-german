@@ -56,33 +56,45 @@ def migrate(connection: sqlite3.Connection, migrations: list[Migration] | None =
     newer than this code or a migration fails; a failed migration leaves the previous version.
     """
     migrations = load_migrations() if migrations is None else migrations
-    latest = migrations[-1].version if migrations else 0
+    latest = max((migration.version for migration in migrations), default=0)
     current = schema_version(connection)
     if current > latest:
         raise DatabaseError(
             f"The database has schema version {current}, but this learn-german only knows up to "
             f"{latest}. Upgrade learn-german."
         )
-    for migration in migrations[current:]:
+    for migration in sorted(migrations, key=lambda migration: migration.version):
+        if migration.version > current:
+            _apply(connection, migration)
+    return max(current, latest)
+
+
+def _apply(connection: sqlite3.Connection, migration: Migration) -> None:
+    try:
+        # IMMEDIATE takes the write lock first, so a second process that started at the same
+        # time waits here and then sees the version the first one committed.
+        connection.execute("BEGIN IMMEDIATE")
+        if schema_version(connection) >= migration.version:
+            connection.execute("ROLLBACK")
+            return
         logger.info("Applying database migration %s", migration.name)
-        try:
-            connection.executescript(
-                f"BEGIN;\n{migration.sql}\nPRAGMA user_version = {migration.version};\nCOMMIT;"
-            )
-        except sqlite3.Error as exc:
-            if connection.in_transaction:
-                connection.execute("ROLLBACK")
-            raise DatabaseError(f"Database migration {migration.name} failed: {exc}") from exc
-    return latest
+        # No implicit COMMIT in autocommit mode, so the script runs inside this transaction.
+        connection.executescript(migration.sql)
+        connection.execute(f"PRAGMA user_version = {migration.version}")
+        connection.execute("COMMIT")
+    except sqlite3.Error as exc:
+        if connection.in_transaction:
+            connection.execute("ROLLBACK")
+        raise DatabaseError(f"Database migration {migration.name} failed: {exc}") from exc
 
 
 def open_database(location: Path | Literal[":memory:"]) -> sqlite3.Connection:
     """Open (creating if needed) and migrate the database. Raises `DatabaseError`."""
-    if isinstance(location, Path):
-        location.parent.mkdir(parents=True, exist_ok=True)
     try:
+        if isinstance(location, Path):
+            location.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(location, autocommit=True)
-    except sqlite3.Error as exc:
+    except (OSError, sqlite3.Error) as exc:
         raise _cannot_open(location, exc) from exc
     try:
         connection.execute("PRAGMA foreign_keys = ON")
@@ -97,7 +109,7 @@ def open_database(location: Path | Literal[":memory:"]) -> sqlite3.Connection:
     return connection
 
 
-def _cannot_open(location: Path | str, exc: sqlite3.Error) -> DatabaseError:
+def _cannot_open(location: Path | str, exc: OSError | sqlite3.Error) -> DatabaseError:
     return DatabaseError(
         f"Cannot open the database at {location}: {exc}. Check that the file is a "
         "learn-german database and is writable, or set LEARN_GERMAN_DATABASE_PATH."

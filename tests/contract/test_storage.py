@@ -104,7 +104,7 @@ def test_sources_store_missing_title_as_none(uow: UnitOfWork) -> None:
 def test_sources_are_unique_by_ref_and_hash(uow: UnitOfWork, duplicate: Source) -> None:
     add_source(uow)
 
-    with pytest.raises(DuplicateSourceError, match="--force"), uow:
+    with pytest.raises(DuplicateSourceError, match="already stored"), uow:
         uow.sources.add(duplicate)
 
 
@@ -251,6 +251,13 @@ def test_chunk_state_clear_error(uow: UnitOfWork) -> None:
         assert uow.chunk_states.get(KEY).last_error is None
 
 
+def test_chunk_state_rejects_naive_time(uow: UnitOfWork) -> None:
+    naive = DEFAULT_NOW.replace(tzinfo=None)
+
+    with uow, pytest.raises(ValueError, match="timezone-aware"):
+        uow.chunk_states.record_error(KEY, "Fehler", at=naive)
+
+
 # --- LLM cache -------------------------------------------------------------------------------
 
 
@@ -306,6 +313,14 @@ def _cache_then_add_duplicate(uow: UnitOfWork) -> None:
         uow.sources.add(make_source())
 
 
+def _fail_after_sqlite_rolled_back(connection: sqlite3.Connection, uow: UnitOfWork) -> None:
+    with uow:
+        uow.sources.add(make_source())
+        # Disk-full and I/O errors make SQLite roll back by itself before the error arrives.
+        connection.execute("ROLLBACK")
+        raise sqlite3.OperationalError("database or disk is full")
+
+
 def _add_orphan_with_deferred_check(connection: sqlite3.Connection, uow: UnitOfWork) -> None:
     with uow:
         # Deferred foreign keys are checked at COMMIT, so the commit itself fails.
@@ -347,6 +362,16 @@ def test_uow_commit_failure_is_undone(connection: sqlite3.Connection, uow: UnitO
 
     with uow:
         assert uow.candidates.for_key(KEY) == []
+
+
+def test_uow_reports_original_error_after_sqlite_rolled_back(
+    connection: sqlite3.Connection, uow: UnitOfWork
+) -> None:
+    with pytest.raises(DatabaseError, match="disk is full"):
+        _fail_after_sqlite_rolled_back(connection, uow)
+
+    with uow:
+        assert uow.sources.all() == []
 
 
 def test_uow_rejects_nesting(uow: UnitOfWork) -> None:

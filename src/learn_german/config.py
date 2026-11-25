@@ -69,6 +69,12 @@ class Settings(BaseSettings):
         description="Claude API key. Prefer the environment or .env over config.toml.",
     )
 
+    @field_validator("hint_language", mode="before")
+    @classmethod
+    def _empty_means_unset(cls, value: object) -> object:
+        # `LEARN_GERMAN_HINT_LANGUAGE=` must not stop add and status, which never need it.
+        return None if isinstance(value, str) and not value.strip() else value
+
     @field_validator("database_path")
     @classmethod
     def _expand_home(cls, value: Path) -> Path:

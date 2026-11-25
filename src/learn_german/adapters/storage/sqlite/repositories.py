@@ -21,6 +21,9 @@ from learn_german.domain.models import (
 
 
 def _to_text(at: datetime) -> str:
+    # astimezone() would read a naive time as local time and shift it silently.
+    if at.tzinfo is None or at.utcoffset() is None:
+        raise ValueError(f"time {at.isoformat()} must be timezone-aware; use the injected Clock")
     return at.astimezone(UTC).isoformat()
 
 
@@ -52,8 +55,8 @@ class SqliteSourceRepository:
             )
         except sqlite3.IntegrityError as exc:
             raise DuplicateSourceError(
-                f"{source.ref} is already stored (same address or same text). "
-                "Pass --force to process it again."
+                f"{source.ref} is already stored (same address or same text), "
+                "so its chunks are already in the database. Nothing to do."
             ) from exc
         return SourceId(_last_row_id(cursor))
 

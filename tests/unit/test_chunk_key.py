@@ -2,7 +2,8 @@ import pytest
 
 from learn_german.domain.models import ChunkKey
 
-# Every row of the 0011 table, plus a reflexive without preposition and a hyphenated noun.
+# Every row of the 0011 table, plus a reflexive without preposition, a hyphenated noun
+# and a verb spelled like an article (einen, to unite).
 VALID = [
     ("verfügung|zu|stellen", "verfügung", "zu", False, "stellen"),
     ("verfügung|zu|stehen", "verfügung", "zu", False, "stehen"),
@@ -13,6 +14,7 @@ VALID = [
     ("entscheidung|treffen", "entscheidung", None, False, "treffen"),
     ("mühe|sich|geben", "mühe", None, True, "geben"),
     ("e-mail|schreiben", "e-mail", None, False, "schreiben"),
+    ("kraft|einen", "kraft", None, False, "einen"),
 ]
 VALID_IDS = [row[0] for row in VALID]
 
@@ -57,6 +59,7 @@ def test_chunk_key_from_parts_builds_the_same_key(
         pytest.param("frage|im|stehen", id="contraction-im"),
         pytest.param("entscheidung|eine|treffen", id="article"),
         pytest.param("rolle|keine|spielen", id="negation"),
+        pytest.param("die|frage|stellen", id="article-as-noun"),
         pytest.param("sich|nehmen", id="sich-as-noun"),
         pytest.param("acht|nehmen|sich", id="sich-as-verb"),
         pytest.param("acht|sich|in|nehmen", id="sich-before-preposition"),
