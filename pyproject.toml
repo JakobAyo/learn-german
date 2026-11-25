@@ -1,6 +1,6 @@
 [project]
 name = "learn-german"
-version = "0.0.0"
+version = "0.1.0"
 description = "Mine German texts for Nomen-Verb-Verbindungen and push production cards into Anki."
 license = "MIT"
 license-files = ["LICENSE"]
