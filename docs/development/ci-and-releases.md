@@ -2,7 +2,7 @@
 title: CI and releases
 summary: CI jobs that gate main, repository settings, the Conventional Commits PR-title rule, and how release-please produces versions, tags and CHANGELOG.md.
 status: draft
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # CI and releases
@@ -14,11 +14,17 @@ Describes how a change gets from a branch to `main` and from `main` to a version
 ## Flow
 
 ```
-branch ─► PR "feat: …" ─► CI jobs + PR-title check ─► squash merge to main
+develop ─► PR "feat: …" ─► CI jobs + PR-title check ─► squash merge to main
                                                           │
                        release-please opens or updates "chore(main): release X.Y.Z"
                                                           │  merge when the milestone is done
                                      tag vX.Y.Z + GitHub Release + CHANGELOG.md entry
+```
+
+`develop` is a permanent integration branch ([0022](../decisions/0022-keep-a-long-lived-develop-branch.md)). After every merge into `main`, including release PRs, merge `main` back into it so the next PR shows only new work:
+
+```
+git checkout develop && git pull && git merge origin/main && git push
 ```
 
 ## CI jobs (`ci.yml`, on every pull request and push to `main`)
@@ -47,7 +53,8 @@ Workflow conventions:
 Set once by hand in GitHub:
 
 - Branch protection on `main`: pull request required, all CI jobs and the PR-title check required, branch up to date before merge, no force pushes.
-- Squash merge only; default squash message is the PR title; delete branches after merge.
+- Branch protection on `develop`: no deletion, no force pushes, admins included; no PR or checks required. Protection also stops the automatic deletion below.
+- Squash merge only; default squash message is the PR title; delete branches after merge (except protected ones such as `develop`).
 - Secret scanning and push protection on (free for public repositories), as a backstop for R3.
 - Dependabot alerts on. `dependabot.yml` updates `github-actions` and `uv` weekly, grouped into one PR each.
 
@@ -84,7 +91,7 @@ Before 1.0.0, a breaking change bumps the minor version instead of the major (`b
 ## Releases with release-please
 
 - `release-please.yml` runs on every push to `main`. It keeps one open release PR that bumps the version in `pyproject.toml` and adds a `CHANGELOG.md` section built from the squash commits since the last tag.
-- Merging the release PR creates the `vX.Y.Z` tag and a GitHub Release with the same notes.
+- Merging the release PR creates the `vX.Y.Z` tag and a GitHub Release with the same notes. `include-component-in-tag: false` keeps the tag plain; release-please's default would be `learn-german-vX.Y.Z`. 0.1.0 was released under that default name, so `v0.1.0` was added by hand on the same commit.
 - Cadence: merge the release PR once per milestone (see [Roadmap](../product/roadmap.md)), or earlier for an urgent fix.
 - 1.0.0 is forced with a `Release-As: 1.0.0` footer at M8.
 
@@ -96,6 +103,7 @@ Base config (`release-please-config.json`):
     ".": {
       "release-type": "python",
       "package-name": "learn-german",
+      "include-component-in-tag": false,
       "bump-minor-pre-major": true,
       "changelog-sections": [
         { "type": "feat", "section": "Features" },
