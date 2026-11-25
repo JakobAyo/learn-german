@@ -85,5 +85,7 @@ Status meanings for records: `draft` = proposed and not yet agreed, `active` = a
 - [Settle M0 build and release mechanics](0021-settle-m0-build-and-release-mechanics.md) — uv_build backend, uv.lock refreshed by the release workflow, pre-commit on the locked ruff, and layer stubs so import-linter enforces 0018 now.
 - [Keep a long-lived develop branch](0022-keep-a-long-lived-develop-branch.md) — develop is a protected integration branch that survives merges; after each squash merge into main, main is merged back into develop.
 - [Release as features land, not once per milestone](0023-release-as-features-land.md) — M2 to M6 run as parallel tracks after M1, so 0.x versions count up as features merge and no longer map to milestones; 1.0.0 stays tied to M8.
+- [Read settings with pydantic-settings, layered flag, environment, .env and TOML](0024-read-settings-with-pydantic-settings.md) — pydantic-settings layers flags, LEARN_GERMAN_ variables, .env and config.toml; unknown TOML keys fail and the hint language is an ISO 639 code.
+- [Track note progress per chunk key, not per occurrence](0025-track-note-progress-per-chunk-key.md) — Candidates are occurrences without status; pushed notes and errors are stored per chunk key, and pending, partial or done is derived from them.
 
 <!-- docs-index:end -->

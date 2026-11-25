@@ -2,7 +2,7 @@
 title: Pipeline
 summary: Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 status: active
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Pipeline
@@ -30,7 +30,7 @@ Everything left of SQLite is free and local apart from fetching. Everything righ
 | Stage | Interface | Reads | Writes |
 |---|---|---|---|
 | Ingest | Source adapter (R5): news URL, local file | URL or path | Source row: reference, title, fetch time, content hash, text |
-| Extract | Chunk extractor (R9): NVV in v1 | Source text | Candidate rows: chunk key, kind, sentence, context window, source, status `pending` |
+| Extract | Chunk extractor (R9): NVV in v1 | Source text | Candidate rows: chunk key, kind, sentence, context window, source. Status is tracked per chunk key, not per row ([0025](../decisions/0025-track-note-progress-per-chunk-key.md)) |
 
 - A source already in the database (same URL or content hash) is skipped unless `--force` is given (R6).
 - A source that fails (blocked, paywalled, too little text) is reported and skipped; the others continue ([0013](../decisions/0013-fetch-articles-politely-without-bypassing-paywalls.md), [0014](../decisions/0014-keep-progress-when-a-run-fails-partway.md)).
