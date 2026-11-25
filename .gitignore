@@ -1,0 +1,32 @@
+# Secrets and local state (R25)
+.env
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Tool caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.import_linter_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Claude Code per-user settings
+.claude/settings.local.json
