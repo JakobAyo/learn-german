@@ -17,7 +17,7 @@ Describes how a change gets from a branch to `main` and from `main` to a version
 develop ─► PR "feat: …" ─► CI jobs + PR-title check ─► squash merge to main
                                                           │
                        release-please opens or updates "chore(main): release X.Y.Z"
-                                                          │  merge when the milestone is done
+                                                          │  merge when a milestone is done
                                      tag vX.Y.Z + GitHub Release + CHANGELOG.md entry
 ```
 
@@ -92,7 +92,7 @@ Before 1.0.0, a breaking change bumps the minor version instead of the major (`b
 
 - `release-please.yml` runs on every push to `main`. It keeps one open release PR that bumps the version in `pyproject.toml` and adds a `CHANGELOG.md` section built from the squash commits since the last tag.
 - Merging the release PR creates the `vX.Y.Z` tag and a GitHub Release with the same notes. `include-component-in-tag: false` keeps the tag plain; release-please's default would be `learn-german-vX.Y.Z`. 0.1.0 was released under that default name, so `v0.1.0` was added by hand on the same commit.
-- Cadence: merge the release PR once per milestone (see [Roadmap](../product/roadmap.md)), or earlier for an urgent fix.
+- Cadence: merge the release PR when any milestone's done-when check passes, or earlier for an urgent fix. Versions count up as features land and do not map to milestones ([0023](../decisions/0023-release-as-features-land.md)).
 - 1.0.0 is forced with a `Release-As: 1.0.0` footer at M8.
 
 Base config (`release-please-config.json`):

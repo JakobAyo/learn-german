@@ -2,7 +2,7 @@
 title: Version with Conventional Commits and release-please
 summary: Conventional Commit PR titles drive SemVer; release-please keeps a release PR that bumps pyproject.toml and CHANGELOG.md and tags on merge.
 status: active
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Version with Conventional Commits and release-please
@@ -16,7 +16,7 @@ The owner wants automatic versioning and a changelog. The tool is installed from
 - Semantic Versioning. 0.x through M7, 1.0.0 at M8 ([Roadmap](../product/roadmap.md)).
 - PR titles follow Conventional Commits, checked in CI. `feat` bumps the minor version, `fix` and `perf` the patch version, and `!` or `BREAKING CHANGE` the major version (minor before 1.0.0). Chunk key format changes, new note type versions and non-automatic DB migrations count as breaking.
 - release-please (`release-type: python`) keeps one release PR that bumps `pyproject.toml`, updates `uv.lock` and writes `CHANGELOG.md`. Merging it creates the tag and a GitHub Release.
-- The release PR is merged once per milestone.
+- The release PR is merged once per milestone. *Replaced by [0023](0023-release-as-features-land.md): versions count up as features land.*
 - release-please uses a fine-grained token limited to this repository, so the release PR triggers the required checks.
 
 Details, config and the two M0 pitfalls are in [CI and releases](../development/ci-and-releases.md).

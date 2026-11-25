@@ -2,7 +2,7 @@
 title: Roadmap
 summary: Implementation milestones M0 to M8 from an empty repo to v1.0.0, each with deliverables, tests, CI changes and a done-when check.
 status: active
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Roadmap
@@ -16,21 +16,21 @@ Splits v1 (as fixed in [Requirements](requirements.md) and decisions 0002 to 001
 - **CI first.** M0 builds the quality gates before any feature code, so every later line lands through them.
 - **Tests ship with the code** in the same pull request. A PR without tests for new behaviour is not done.
 - **Work against ports.** M4, M5 and M6 are built and tested against fakes of their neighbours, so they do not wait for each other.
-- **One release per milestone.** Feature PRs accumulate in the release PR; merge it when the milestone's done-when check passes. 0.x until v1, then 1.0.0 at M8.
+- **Release as features land** ([0023](../decisions/0023-release-as-features-land.md)). Feature PRs accumulate in the release PR; merge it when any milestone's done-when check passes. A 0.x version may contain parts of several parallel tracks, so versions do not map to milestones. 1.0.0 is still forced at M8.
 - **Docs and decisions move with the code.** A behaviour change updates its doc; a new choice gets an ADR.
 
 ## Overview
 
 | # | Milestone | Outcome | Release |
 |---|---|---|---|
-| M0 | Foundation and CI/CD | Empty package, all quality gates and the release pipeline proven | 0.1.0 |
-| M1 | Domain, ports, storage, config | Core types, plug-in interfaces, SQLite with migrations, settings | 0.2.0 |
-| M2 | NVV extractor | Text in, correct chunk keys out, guarded by a golden corpus | 0.3.0 |
-| M3 | Ingest, `add`, `status`, `reextract` | **First usable tool**: collect sources and see pending chunks | 0.4.0 |
-| M4 | Selection | Filter chain, occurrence ranker, cap, occurrence picker | 0.5.0 |
-| M5 | Generation | LLM port, Claude adapter, versioned prompt, cache decorator | 0.6.0 |
-| M6 | Anki export | AnkiConnect gateway, v1 note types, note builder, tags | 0.7.0 |
-| M7 | `sync` | **First cards in Anki**: end-to-end run with partial-failure handling and dry run | 0.8.0 |
+| M0 | Foundation and CI/CD | Empty package, all quality gates and the release pipeline proven | 0.1.0 (done) |
+| M1 | Domain, ports, storage, config | Core types, plug-in interfaces, SQLite with migrations, settings | 0.x |
+| M2 | NVV extractor | Text in, correct chunk keys out, guarded by a golden corpus | 0.x |
+| M3 | Ingest, `add`, `status`, `reextract` | **First usable tool**: collect sources and see pending chunks | 0.x |
+| M4 | Selection | Filter chain, occurrence ranker, cap, occurrence picker | 0.x |
+| M5 | Generation | LLM port, Claude adapter, versioned prompt, cache decorator | 0.x |
+| M6 | Anki export | AnkiConnect gateway, v1 note types, note builder, tags | 0.x |
+| M7 | `sync` | **First cards in Anki**: end-to-end run with partial-failure handling and dry run | 0.x |
 | M8 | v1 hardening | README, setup docs, manual release checklist, quality measurement | 1.0.0 |
 
 ```
