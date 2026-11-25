@@ -84,5 +84,6 @@ Status meanings for records: `draft` = proposed and not yet agreed, `active` = a
 - [Version with Conventional Commits and release-please](0020-version-with-conventional-commits-and-release-please.md) — Conventional Commit PR titles drive SemVer; release-please keeps a release PR that bumps pyproject.toml and CHANGELOG.md and tags on merge.
 - [Settle M0 build and release mechanics](0021-settle-m0-build-and-release-mechanics.md) — uv_build backend, uv.lock refreshed by the release workflow, pre-commit on the locked ruff, and layer stubs so import-linter enforces 0018 now.
 - [Keep a long-lived develop branch](0022-keep-a-long-lived-develop-branch.md) — develop is a protected integration branch that survives merges; after each squash merge into main, main is merged back into develop.
+- [Release as features land, not once per milestone](0023-release-as-features-land.md) — M2 to M6 run as parallel tracks after M1, so 0.x versions count up as features merge and no longer map to milestones; 1.0.0 stays tied to M8.
 
 <!-- docs-index:end -->
