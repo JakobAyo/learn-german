@@ -29,10 +29,12 @@ class FilterChain:
 
 
 class AlreadyInDeckFilter:
-    """Narrows each chunk's missing note kinds to those the Anki deck does not have (R11, 0033).
+    """Narrows each chunk's missing note kinds to those Anki does not have yet (R11, 0033).
 
-    A chunk whose missing notes are all in the deck already is dropped. The gateway is asked
-    once per note kind that some chunk still needs. Raises `FatalError` if Anki is unreachable.
+    "Already in the deck" means a note of that kind's note type anywhere in the collection,
+    not only in the tool's deck (0039). A chunk whose missing notes all exist already is
+    dropped. The gateway is asked once per note kind that some chunk still needs. Raises
+    `FatalError` if Anki is unreachable.
     """
 
     def __init__(self, gateway: AnkiGateway) -> None:
