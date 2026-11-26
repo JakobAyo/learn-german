@@ -2,7 +2,7 @@
 title: Requirements
 summary: Functional and non-functional requirements, scope, non-goals and deferred features, agreed before implementation starts.
 status: active
-updated: 2026-11-24
+updated: 2026-11-26
 ---
 
 # Requirements
@@ -94,7 +94,7 @@ States what the extractor must do and the constraints it must respect, so that t
 
 ## Open questions
 
-- **Quality of automatic transformations:** with no review step and no self-check pass, how often LLM output is wrong. Measure this once v1 runs, and revisit [0005](../decisions/0005-push-cards-automatically-with-tagging-and-dry-run.md) if the error rate is high.
+- **Quality of automatic transformations:** with no review step and no self-check pass, how often LLM output is wrong. Measure this once v1 runs, and revisit [0005](../decisions/0005-push-cards-automatically-with-tagging-and-dry-run.md) if the error rate is high. The method, rubric and thresholds are in [Card quality of v1](../research/card-quality-v1.md); the results are still to be recorded there by the owner.
 
 ## Related
 
