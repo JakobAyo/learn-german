@@ -58,6 +58,7 @@ class AnkiConnectGateway:
 
     def existing_keys(self, note_kind: NoteKind) -> frozenset[ChunkKey]:
         spec = self._note_types[note_kind]
+        logger.debug("Reading the chunk keys of every %s note in Anki", spec.name)
         query = f'"note:{_escape_search(spec.name)}"'
         note_ids = self._client.invoke("findNotes", query=query)
         if not isinstance(note_ids, list):
@@ -67,7 +68,9 @@ class AnkiConnectGateway:
         infos = self._client.invoke("notesInfo", notes=note_ids)
         if not isinstance(infos, list):
             raise AnkiActionError("notesInfo", f"expected a list of notes, got {infos!r}")
-        return frozenset(key for info in infos if (key := _chunk_key(info, spec)) is not None)
+        keys = frozenset(key for info in infos if (key := _chunk_key(info, spec)) is not None)
+        logger.debug("Anki has %d %s notes with %d chunk keys", len(infos), spec.name, len(keys))
+        return keys
 
     def add_notes(self, drafts: Sequence[NoteDraft]) -> None:
         for draft in drafts:

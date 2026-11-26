@@ -6,6 +6,7 @@ variables carry the `LEARN_GERMAN_` prefix, except `ANTHROPIC_API_KEY`. This is 
 module that reads the environment.
 """
 
+import logging
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
@@ -21,6 +22,8 @@ from pydantic_settings import (
 )
 
 from learn_german.domain.errors import ConfigError, MissingCredentialsError
+
+logger = logging.getLogger(__name__)
 
 APP_NAME: Final = "learn-german"
 ENV_PREFIX: Final = "LEARN_GERMAN_"
@@ -138,6 +141,13 @@ def load_settings(
     Raises `ConfigError` if a value is invalid, a key is unknown or the TOML cannot be parsed.
     """
     toml_file = default_config_file() if config_file is None else config_file
+    logger.debug(
+        "Reading settings from %s (%s) and %s (%s)",
+        toml_file,
+        "found" if toml_file.is_file() else "not found",
+        env_file,
+        "found" if env_file is not None and env_file.is_file() else "not found",
+    )
 
     class _Sourced(Settings):
         model_config = SettingsConfigDict(toml_file=toml_file, env_file=env_file)

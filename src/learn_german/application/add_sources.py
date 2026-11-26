@@ -1,5 +1,6 @@
 """`AddSources`: the `add` command's use case (R4 to R6, 0017, 0042)."""
 
+import logging
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
@@ -8,6 +9,8 @@ from learn_german.application.extraction import extract_candidates, refresh_cand
 from learn_german.domain.errors import ItemError, SourceFetchError
 from learn_german.domain.models import Candidate, ChunkKey, Source, SourceId
 from learn_german.ports import ChunkExtractor, SourceAdapter, UnitOfWork
+
+logger = logging.getLogger(__name__)
 
 
 class AddResult(StrEnum):
@@ -91,10 +94,12 @@ class AddSources:
         # R6: a known URL is not fetched again. Files are recognised after reading, below,
         # because their stored reference is the absolute path.
         if not force and self._stored_id(ref=ref) is not None:
+            logger.debug("Not fetching %s: its address is stored already", ref)
             return _skipped(ref, None)
         source = adapter.fetch(ref)
         stored_id = self._stored_id(ref=source.ref, content_hash=source.content_hash)
         if stored_id is not None and not force:
+            logger.debug("Not storing %s: the same text is stored already", ref)
             return _skipped(ref, source.title)
         candidates = extract_candidates(self._extractors, source.text)
         with self._uow:

@@ -102,6 +102,14 @@ class AnthropicProvider:
 
     def generate(self, request: CardRequest) -> CardContent:
         prompt = render_prompt(self._template, request)
+        logger.debug(
+            "Calling Claude %s for %s at %s effort (prompt %s, %d characters)",
+            self._model,
+            request.key,
+            self._effort,
+            PROMPT_VERSION,
+            len(prompt),
+        )
         try:
             message = self._client.messages.create(
                 model=self._model,

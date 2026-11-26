@@ -48,15 +48,20 @@ def extractor_registry() -> dict[str, ChunkExtractor]:
     return {ChunkKind.NVV.value: NvvExtractor.default()}
 
 
-def _anthropic_provider(settings: Settings) -> LLMProvider:
-    return AnthropicProvider.create(settings.require_anthropic_api_key(), model=settings.model)
+def _anthropic_provider(settings: Settings, http_client: httpx2.Client | None) -> LLMProvider:
+    return AnthropicProvider.create(
+        settings.require_anthropic_api_key(), model=settings.model, http_client=http_client
+    )
 
 
-LLM_PROVIDERS: Mapping[str, Callable[[Settings], LLMProvider]] = {ANTHROPIC: _anthropic_provider}
-"""LLM provider factories by the `provider` setting (R17). Each checks its own credentials."""
+LLMFactory = Callable[[Settings, httpx2.Client | None], LLMProvider]
+
+LLM_PROVIDERS: Mapping[str, LLMFactory] = {ANTHROPIC: _anthropic_provider}
+"""LLM provider factories by the `provider` setting (R17). Each checks its own credentials
+and uses the given HTTP client, or its own when it is None."""
 
 
-def llm_provider(settings: Settings) -> LLMProvider:
+def llm_provider(settings: Settings, http_client: httpx2.Client | None = None) -> LLMProvider:
     """The configured provider, without the check and cache decorators.
 
     Raises `ConfigError` for an unknown provider and `MissingCredentialsError` if its API
@@ -68,7 +73,7 @@ def llm_provider(settings: Settings) -> LLMProvider:
             f"Unknown LLM provider {settings.provider!r}. Set provider in config.toml or "
             f"{ENV_PREFIX}PROVIDER to one of: {', '.join(LLM_PROVIDERS)}."
         )
-    return factory(settings)
+    return factory(settings, http_client)
 
 
 def generation_stack(provider: LLMProvider, uow: UnitOfWork, clock: Clock) -> LLMProvider:
@@ -103,6 +108,8 @@ class Overrides:
     anki: AnkiGateway | None = None
     anki_http_client: httpx2.Client | None = None
     """Used by the real Anki gateway when `anki` is not given, for example with a mock."""
+    llm_http_client: httpx2.Client | None = None
+    """Used by the real LLM provider when `provider` is not given, for example with a mock."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,7 +166,7 @@ def sync_service(settings: Settings, overrides: Overrides | None = None) -> Iter
     """
     overrides = overrides or Overrides()
     hint_language = settings.require_hint_language()  # R16, 0015
-    provider = overrides.provider or llm_provider(settings)
+    provider = overrides.provider or llm_provider(settings, overrides.llm_http_client)
     clock = overrides.clock or SystemClock()
     uow = SqliteUnitOfWork(open_database(settings.database_path))
     anki_http = overrides.anki_http_client or httpx2.Client(timeout=DEFAULT_TIMEOUT_SECONDS)

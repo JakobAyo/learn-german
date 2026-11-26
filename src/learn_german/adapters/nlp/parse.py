@@ -1,5 +1,6 @@
 """Parse German text with spaCy and hand the rest of the extractor plain `TokenView`s."""
 
+import logging
 import re
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -10,6 +11,8 @@ from learn_german.domain.errors import NlpModelMissingError
 if TYPE_CHECKING:
     from spacy.language import Language
     from spacy.tokens import Doc, Span
+
+logger = logging.getLogger(__name__)
 
 MODEL_NAME = "de_core_news_lg"
 _PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
@@ -51,6 +54,7 @@ class SpacyParser:
 
     def _load(self) -> "Language":
         if self._nlp is None:
+            logger.debug("Loading the spaCy model %s", self._model)
             try:
                 self._nlp = self._loader(self._model)
             except OSError as exc:

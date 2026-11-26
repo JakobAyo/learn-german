@@ -1,6 +1,7 @@
 """Typer application. Commands parse arguments and delegate; they hold no logic.
 
 Exit codes: 0 everything worked, 1 some sources or chunks failed, 2 a fatal or usage error.
+The global `--verbose` option turns on the debug log on stderr (0048).
 """
 
 from collections.abc import Iterator
@@ -16,6 +17,7 @@ from learn_german.application.status import DEFAULT_TOP
 from learn_german.application.sync import SyncRun
 from learn_german.bootstrap import IngestServices, Overrides, ingest_services, sync_service
 from learn_german.cli import presenters
+from learn_german.cli.logs import configure_logging
 from learn_german.config import load_settings
 from learn_german.domain.errors import FatalError
 from learn_german.domain.models import RunSummary
@@ -65,8 +67,18 @@ def create_app(overrides: Overrides | None = None) -> typer.Typer:
                 is_eager=True,
             ),
         ] = False,
+        verbose: Annotated[
+            bool,
+            typer.Option(
+                "--verbose",
+                "-v",
+                help="Log what the tool does (fetches, extraction, LLM calls, Anki actions) "
+                "to stderr. Give it before the command: learn-german -v sync.",
+            ),
+        ] = False,
     ) -> None:
         """Mine German texts for Nomen-Verb-Verbindungen and push production cards into Anki."""
+        configure_logging(verbose=verbose)
 
     @app.command()
     def add(

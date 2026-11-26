@@ -1,11 +1,14 @@
 """`LocalFileSource`: UTF-8 `.txt` files, the fallback for pages that cannot be fetched (0013)."""
 
+import logging
 from pathlib import Path
 
 from learn_german.adapters.sources.text import content_hash, normalise_text
 from learn_german.domain.errors import SourceFetchError
 from learn_german.domain.models import Source, SourceKind
 from learn_german.ports import Clock
+
+logger = logging.getLogger(__name__)
 
 SUFFIXES = frozenset({".txt"})
 
@@ -30,6 +33,7 @@ class LocalFileSource:
         text = normalise_text(_read_utf8(path))
         if not text:
             raise SourceFetchError(f"{path} holds no text. Put the article text in it first.")
+        logger.debug("Read %d characters from %s", len(text), path)
         return Source(
             ref=str(path),
             kind=SourceKind.LOCAL_FILE,

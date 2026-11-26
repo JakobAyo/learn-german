@@ -104,6 +104,7 @@ def open_database(location: Path | Literal[":memory:"]) -> sqlite3.Connection:
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA busy_timeout = 5000")
         migrate(connection)
+        logger.debug("Opened the database at %s", location)
     except sqlite3.Error as exc:
         connection.close()
         raise _cannot_open(location, exc) from exc
