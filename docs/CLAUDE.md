@@ -74,6 +74,10 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Read existing keys per note type across the whole collection](decisions/0039-read-existing-keys-per-note-type-across-the-collection.md) — existing_keys counts every note of the tool's note type wherever it is, not only in the deck, so it agrees with Anki's own duplicate check on add.
 - [Add notes one call each, escape field values, and split AnkiConnect errors into fatal and item](decisions/0040-add-notes-one-call-each-and-split-ankiconnect-errors.md) — One addNote call per note so a rejection is attributable, field values HTML-escaped, unreachable or failing setup is fatal, a rejected note is a PushError.
 - [Run the remaining milestones one at a time on branches off develop](decisions/0041-run-the-remaining-milestones-sequentially.md) — With the parallel tracks merged, M3, M7 and M8 are built one after another on branches off develop; file ownership and frozen files no longer apply.
+- [Recognise known sources before fetching, and refresh them in place with --force](decisions/0042-recognise-known-sources-before-fetching-and-refresh-them-in-place.md) — add looks a reference up before fetching and the text after; --force fetches again, overwrites the stored row and updates its candidates by the reextract rules.
+- [Check robots.txt per site and redirect, and require 150 words of article text](decisions/0043-check-robots-txt-per-site-and-redirect-and-require-150-words.md) — robots.txt is read like the standard library does and checked again per redirected site; at most five redirects; under 150 words counts as a paywall.
+- [Normalise source text by paragraph before hashing](decisions/0044-normalise-source-text-by-paragraph-before-hashing.md) — Source text is NFC with blank-line paragraphs and collapsed whitespace; the content hash is its SHA-256, and files are stored by absolute path.
+- [Build the CLI with create_app and stream outcomes per source](decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md) — create_app takes bootstrap Overrides so tests swap plug-ins; use cases yield one outcome per source, printed at once by presenters; exit codes 0, 1 and 2.
 
 ### [development/](development/CLAUDE.md)
 
@@ -119,6 +123,7 @@ Extraction pipeline: ingest, NLP processing, filtering and ranking, card generat
 
 - [Code architecture](system-design/code-architecture.md) `[draft]` — Ports-and-adapters layout of the Python package, the dependency rule, every port with its v1 adapter and fake, and the patterns used where.
 - [Generation](system-design/generation.md) — How a CardRequest becomes checked, cached CardContent: provider port, versioned prompt, sanity checks, cache decorator and wiring.
+- [Ingest](system-design/ingest.md) — How add, status and reextract work: source adapters, normalising and hashing, polite fetching, duplicate checks, --force, the 0017 rules, output, exit codes.
 - [NVV extraction](system-design/nvv-extraction.md) — How the NVV extractor parses with spaCy, matches light verbs in ranked tiers, builds 0011 keys and context, and how its quality is guarded.
 - [Pipeline](system-design/pipeline.md) — Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 
