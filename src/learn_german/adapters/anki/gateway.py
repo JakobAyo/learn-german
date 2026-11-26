@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class AnkiConnectGateway:
     """Implements `ports.AnkiGateway` over an `AnkiConnectClient`.
 
+    `check_available` only asks for AnkiConnect's version, so it writes nothing (0046).
     `ensure_setup` checks AnkiConnect's version, creates the deck if it is missing and each
     note type that is missing. It never changes an existing note type, and raises
     `NoteTypeMismatchError` if one has other fields than its spec (0038).
@@ -39,6 +40,9 @@ class AnkiConnectGateway:
         self._client = client
         self._deck = deck
         self._note_types = note_types
+
+    def check_available(self) -> None:
+        self._client.require_version()
 
     def ensure_setup(self) -> None:
         self._client.require_version()
