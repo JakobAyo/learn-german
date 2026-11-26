@@ -13,6 +13,7 @@ from learn_german.domain.models import (
     ChunkKind,
     ChunkState,
     NoteKind,
+    PendingChunk,
     RunId,
     Source,
     SourceId,
@@ -115,6 +116,37 @@ class SqliteCandidateRepository:
 
     def for_key(self, key: ChunkKey) -> list[Candidate]:
         return self._select("chunk_key = ?", key.value)
+
+    def pending_chunks(self) -> list[PendingChunk]:
+        """Keys not yet done locally, with occurrence counts from `candidates` (R13, 0025)."""
+        rows = self._connection.execute(
+            """
+            WITH counts AS (
+                SELECT chunk_key, COUNT(*) AS occurrences, MIN(id) AS oldest_id
+                FROM candidates
+                GROUP BY chunk_key
+            )
+            SELECT
+                counts.chunk_key,
+                oldest.kind,
+                counts.occurrences,
+                (SELECT group_concat(note_kind, ',') FROM pushed_notes
+                 WHERE pushed_notes.chunk_key = counts.chunk_key)
+            FROM counts JOIN candidates AS oldest ON oldest.id = counts.oldest_id
+            ORDER BY counts.chunk_key
+            """
+        )
+        chunks = []
+        for key, kind, occurrences, pushed in rows:
+            state = ChunkState(
+                key=ChunkKey(str(key)),
+                pushed=frozenset(NoteKind(value) for value in (pushed or "").split(",") if value),
+            )
+            if state.missing:
+                chunks.append(
+                    PendingChunk(state.key, ChunkKind(kind), int(occurrences), state.missing)
+                )
+        return chunks
 
     def _select(self, where: str, value: object) -> list[Candidate]:
         rows = self._connection.execute(

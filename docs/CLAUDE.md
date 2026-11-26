@@ -27,7 +27,7 @@ A personal command-line tool that mines German source material (news articles, l
 
 Input sources, frequency lists, known-words store and the extracted-item data model.
 
-- [Data model](data/data-model.md) — SQLite tables, columns and constraints, how chunk status is derived from pushed notes, and how schema migrations are numbered and applied.
+- [Data model](data/data-model.md) — SQLite tables and constraints, how chunk status and pending chunks are derived from candidates and pushed notes, and how migrations are applied.
 
 ### [decisions/](decisions/CLAUDE.md)
 
@@ -64,6 +64,9 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Match NVVs in ranked tiers on the dependency parse, without a noun lexicon](decisions/0029-match-nvvs-in-ranked-tiers-without-a-noun-lexicon.md) — A light verb's NVV is the first non-empty tier of cvc phrase or variant, bare object, last bare PP, other object; no list of NVV nouns is used.
 - [Keep a verb's own separable prefix in the key, and list light verbs by full infinitive](decisions/0030-keep-a-verbs-own-separable-prefix-in-the-key.md) — The verb in a chunk key includes its own separated prefix (nahm Kontakt auf → kontakt|aufnehmen); the light-verb list holds full infinitives such as aufnehmen.
 - [Guard extraction quality with a golden-corpus baseline](decisions/0031-guard-extraction-with-a-golden-corpus-baseline.md) — Hand-written sentences with expected keys are scored for micro-averaged precision and recall; the nlp test fails below the baseline stored next to the corpus.
+- [Feed the cards from the shortest sentence of at least ten words](decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md) — Of a chunk's occurrences, the picker takes the shortest sentence with at least ten words, else the longest; ties go to the most recent occurrence.
+- [Count a note as present if the local record or Anki has it](decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md) — A note kind is needed only if neither pushed_notes nor the Anki deck has it, so locally done chunks skip Anki and a note deleted in Anki stays deleted.
+- [Rank partial chunks first, then by occurrences, ties by key](decisions/0034-rank-partial-chunks-first-then-by-occurrences.md) — OccurrenceRanker puts chunks that already have one note first, then orders by occurrence count, most first, and breaks ties by the chunk key.
 
 ### [development/](development/CLAUDE.md)
 
