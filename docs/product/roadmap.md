@@ -32,7 +32,7 @@ Splits v1 (as fixed in [Requirements](requirements.md) and decisions 0002 to 001
 | M5 | Generation | LLM port, Claude adapter, versioned prompt, cache decorator | implemented, not yet released |
 | M6 | Anki export | AnkiConnect gateway, v1 note types, note builder, tags | implemented, not yet released |
 | M7 | `sync` | **First cards in Anki**: end-to-end run with partial-failure handling and dry run | implemented, not yet released |
-| M8 | v1 hardening | README, setup docs, manual release checklist, quality measurement | 1.0.0 |
+| M8 | v1 hardening | README, setup docs, manual release checklist, quality measurement | implemented (code and docs); the manual checks, the quality measurement and the 1.0.0 release are pending with the owner |
 
 ```
 M0 ─► M1 ─┬─► M2 ─► M3 ───────────────┐
@@ -265,6 +265,10 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 - Release 1.0.0 with a `Release-As: 1.0.0` commit footer.
 
 **Done when:** a fresh install by following only the README produces cards, and the release checklist passes.
+
+**Status:** the code and documentation are on `develop`: [README](../../README.md), the global `--verbose` option, error messages reviewed for a next step, [Release checklist](../development/release-checklist.md), the completed [Claude API](../integrations/claude-api.md) page, and the method for the [card quality measurement](../research/card-quality-v1.md). Pending with the owner, in order: run the release checklist, run and record the quality measurement, then open the `develop` → `main` PR with the override block and `Release-As: 1.0.0` footer from [CI and releases](../development/ci-and-releases.md#forcing-100).
+
+**Decisions:** [0048](../decisions/0048-log-with-stdlib-logging-behind-a-global-verbose-flag.md).
 
 ---
 
