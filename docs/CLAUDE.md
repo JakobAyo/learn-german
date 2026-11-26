@@ -67,6 +67,9 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Feed the cards from the shortest sentence of at least ten words](decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md) — Of a chunk's occurrences, the picker takes the shortest sentence with at least ten words, else the longest; ties go to the most recent occurrence.
 - [Count a note as present if the local record or Anki has it](decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md) — A note kind is needed only if neither pushed_notes nor the Anki deck has it, so locally done chunks skip Anki and a note deleted in Anki stays deleted.
 - [Rank partial chunks first, then by occurrences, ties by key](decisions/0034-rank-partial-chunks-first-then-by-occurrences.md) — OccurrenceRanker puts chunks that already have one note first, then orders by occurrence count, most first, and breaks ties by the chunk key.
+- [Version the card prompt as a template file with a pinned hash](decisions/0035-version-the-card-prompt-as-a-template-with-a-pinned-hash.md) — The card prompt is a template file beside the LLM adapters with a pure renderer; PROMPT_VERSION is in every cache key, and a test pins its hash.
+- [Check card content cheaply, then cache it per request in its own transaction](decisions/0036-check-card-content-then-cache-it-in-its-own-transaction.md) — CheckedProvider turns clearly wrong content into a GenerationError; CachingProvider wraps it, keyed by a request hash, in its own transactions.
+- [Call Claude with a JSON-schema output format and split API errors into fatal and item](decisions/0037-call-claude-with-a-json-schema-and-split-errors-into-fatal-and-item.md) — One Messages call with a JSON-schema output at medium effort, no refusal fallback; rejected access is fatal, failures after retries are item errors.
 
 ### [development/](development/CLAUDE.md)
 
@@ -83,7 +86,7 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 
 External systems: Anki, translation, audio and any LLM; how each is called and fails.
 
-- (empty)
+- [Claude API](integrations/claude-api.md) — How AnthropicProvider calls the Claude API: settings, request, retries, how each failure is reported, cost, mocked tests and the eval script.
 
 ### [learning-design/](learning-design/CLAUDE.md)
 
@@ -110,6 +113,7 @@ Experiments, evaluations and summaries of outside advice that inform decisions.
 Extraction pipeline: ingest, NLP processing, filtering and ranking, card generation, export.
 
 - [Code architecture](system-design/code-architecture.md) `[draft]` — Ports-and-adapters layout of the Python package, the dependency rule, every port with its v1 adapter and fake, and the patterns used where.
+- [Generation](system-design/generation.md) — How a CardRequest becomes checked, cached CardContent: provider port, versioned prompt, sanity checks, cache decorator and wiring.
 - [NVV extraction](system-design/nvv-extraction.md) — How the NVV extractor parses with spaCy, matches light verbs in ranked tiers, builds 0011 keys and context, and how its quality is guarded.
 - [Pipeline](system-design/pipeline.md) — Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 
