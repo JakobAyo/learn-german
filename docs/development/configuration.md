@@ -2,7 +2,7 @@
 title: Configuration
 summary: Every setting with its default, environment variable and TOML key, where config.toml and .env are read from, and the order in which sources override each other.
 status: active
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Configuration
@@ -30,6 +30,7 @@ Highest first:
 | `provider` | `LEARN_GERMAN_PROVIDER` | `anthropic` | LLM provider (R17) |
 | `model` | `LEARN_GERMAN_MODEL` | `claude-opus-5-5` | LLM model ID (0015) |
 | `deck` | `LEARN_GERMAN_DECK` | `learn-german::chunks` | Anki deck the tool owns (0016) |
+| `anki_connect_url` | `LEARN_GERMAN_ANKI_CONNECT_URL` | `http://127.0.0.1:8765` | AnkiConnect endpoint of the running Anki app (0003) |
 | `database_path` | `LEARN_GERMAN_DATABASE_PATH` | `~/.local/share/learn-german/learn-german.db` | SQLite state ([Data model](../data/data-model.md)); `~` is expanded |
 | `anthropic_api_key` | `ANTHROPIC_API_KEY` | none | Claude API key; keep it in the environment or `.env`, not in `config.toml` |
 

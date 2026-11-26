@@ -244,7 +244,7 @@ class PendingChunk:
 
 @dataclass(frozen=True, slots=True)
 class CardRequest:
-    """What the LLM gets for one chunk (0012). M5 may add fields."""
+    """What the LLM gets for one chunk (0012). Shared by M5 and M6, so changed only by ADR."""
 
     key: ChunkKey
     kind: ChunkKind
@@ -255,8 +255,15 @@ class CardRequest:
 
 @dataclass(frozen=True, slots=True)
 class CardContent:
-    """Validated LLM output for one chunk, enough to build both notes (0012). M5 may add fields."""
+    """Validated LLM output for one chunk, enough to build both notes (0012).
 
+    Each field fills one note field (see docs/learning-design/note-types.md):
+    `citation_form` -> `Chunk` (0028), `shortened_sentence` -> `Answer`,
+    `verbal_rewrite` -> transformation `Prompt`, `translation` -> translation `Prompt`,
+    `meaning` -> `Meaning`. Shared by M5 and M6, so changed only by ADR.
+    """
+
+    citation_form: str
     shortened_sentence: str
     verbal_rewrite: str
     translation: str

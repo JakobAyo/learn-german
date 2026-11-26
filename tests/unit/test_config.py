@@ -57,6 +57,7 @@ def test_settings_defaults(toml_file: Path, env_file: Path) -> None:
         "provider": "anthropic",
         "model": "claude-opus-5-5",
         "deck": "learn-german::chunks",
+        "anki_connect_url": "http://127.0.0.1:8765",
         "database_path": settings.database_path,
         "anthropic_api_key": None,
     }

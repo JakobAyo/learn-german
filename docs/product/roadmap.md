@@ -2,7 +2,7 @@
 title: Roadmap
 summary: Implementation milestones M0 to M8 from an empty repo to v1.0.0, each with deliverables, tests, CI changes and a done-when check.
 status: active
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Roadmap
@@ -18,6 +18,7 @@ Splits v1 (as fixed in [Requirements](requirements.md) and decisions 0002 to 001
 - **Work against ports.** M4, M5 and M6 are built and tested against fakes of their neighbours, so they do not wait for each other.
 - **Release as features land** ([0023](../decisions/0023-release-as-features-land.md)). Feature PRs accumulate in the release PR; merge it when any milestone's done-when check passes. A 0.x version may contain parts of several parallel tracks, so versions do not map to milestones. 1.0.0 is still forced at M8.
 - **Docs and decisions move with the code.** A behaviour change updates its doc; a new choice gets an ADR.
+- **Parallel tracks own their files.** M2, M4, M5 and M6 run at the same time in separate worktrees under the ownership rules in [Parallel tracks](../development/parallel-tracks.md) ([0026](../decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md)).
 
 ## Overview
 
@@ -108,11 +109,11 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
   - `match`: finds light verb plus noun object or prepositional object on `TokenView`s.
   - `keys`: a pure function from matched `TokenView`s to `ChunkKey`, applying contraction expansion, reflexive `sich`, separable prefixes, and the spelling-variant table.
 - Data files loaded through `importlib.resources`: `light_verbs.txt`, `spelling_variants.tsv`.
-- Citation form for the `Chunk` field (*eine Entscheidung treffen*). If the article cannot be derived reliably from the parse, record that the LLM returns it in M5 instead.
+- ~~Citation form for the `Chunk` field~~: settled before the parallel tracks started; the LLM returns it in M5 ([0028](../decisions/0028-let-the-llm-supply-the-citation-form.md)).
 - Context window: the sentence plus one sentence either side.
 - Extractor registry keyed by name, filled in the composition root.
 
-**Decision to record:** how the spaCy model is installed. Recommendation: an optional extra `model` holding the pinned wheel URL, so `uv tool install 'learn-german[model] @ git+…'` gets everything and fast CI jobs skip the 500 MB download.
+**Decision recorded:** the spaCy model is the optional extra `model` holding the pinned wheel URL ([0027](../decisions/0027-settle-shared-dependencies-before-parallel-tracks.md)), so `uv tool install 'learn-german[model] @ git+…'` gets everything and fast CI jobs skip the 500 MB download.
 
 **Tests**
 
@@ -175,7 +176,7 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 
 **Deliverables**
 
-- `CardRequest` and `CardContent` types. `CardContent` holds shortened sentence, verbal-style rewrite, translation and meaning (plus citation form if M2 moved it here), validated by a pydantic model at the adapter boundary.
+- `CardRequest` and `CardContent` exist in `domain/models.py` and are frozen while the tracks run ([0026](../decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md)). `CardContent` holds citation form, shortened sentence, verbal-style rewrite, translation and meaning, validated by a pydantic model at the adapter boundary.
 - Prompt as a template file plus `PROMPT_VERSION`; rendering is a pure function.
 - `AnthropicProvider`: Anthropic SDK, structured JSON output against the `CardContent` schema, model from config (default `claude-opus-5-5`), SDK retries. Authentication failure maps to `FatalError`; invalid output maps to `ItemError`.
 - `CachingProvider` decorator wrapping any provider, keyed by hash of provider, model, prompt version and canonical request. Every future provider gets caching for free.

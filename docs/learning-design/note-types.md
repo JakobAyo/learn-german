@@ -2,7 +2,7 @@
 title: Note types
 summary: Deck, the two v1 note types and their fields, card fronts and backs, and tags; fields are hard to change once notes exist.
 status: active
-updated: 2026-11-24
+updated: 2026-11-26
 ---
 
 # Note types
@@ -22,7 +22,7 @@ Both note types start with the same fields, in this order. `ChunkKey` is first b
 | Field | Example | Source |
 |---|---|---|
 | `ChunkKey` | `entscheidung\|treffen` | extractor ([0011](../decisions/0011-normalise-nvv-chunk-keys-as-noun-prep-verb.md)) |
-| `Chunk` | eine Entscheidung treffen | extractor, citation form |
+| `Chunk` | eine Entscheidung treffen | LLM, citation form ([0028](../decisions/0028-let-the-llm-supply-the-citation-form.md)) |
 | `Meaning` | eine Entscheidung treffen = entscheiden, sich festlegen | LLM, one line in German |
 | `Answer` | Die Regierung hat die Entscheidung getroffen, die Steuer zu senken. | LLM, shortened source sentence |
 

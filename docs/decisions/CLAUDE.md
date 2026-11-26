@@ -87,5 +87,8 @@ Status meanings for records: `draft` = proposed and not yet agreed, `active` = a
 - [Release as features land, not once per milestone](0023-release-as-features-land.md) — M2 to M6 run as parallel tracks after M1, so 0.x versions count up as features merge and no longer map to milestones; 1.0.0 stays tied to M8.
 - [Read settings with pydantic-settings, layered flag, environment, .env and TOML](0024-read-settings-with-pydantic-settings.md) — pydantic-settings layers flags, LEARN_GERMAN_ variables, .env and config.toml; unknown TOML keys fail and the hint language is an ISO 639 code.
 - [Track note progress per chunk key, not per occurrence](0025-track-note-progress-per-chunk-key.md) — Candidates are occurrences without status; pushed notes and errors are stored per chunk key, and pending, partial or done is derived from them.
+- [Run M2, M4, M5 and M6 as parallel tracks with file ownership](0026-run-m2-m4-m5-m6-as-parallel-tracks.md) — Four agents build M2, M4, M5 and M6 at once in worktrees; each track owns fixed files, shared contracts are frozen, each merges into main alone.
+- [Settle runtime dependencies up front, httpx2 and the spaCy model extra](0027-settle-shared-dependencies-before-parallel-tracks.md) — anthropic, httpx2 and spaCy 3.8 are added before the tracks; httpx2 replaces httpx as the SDK uses it; the spaCy model is an optional extra.
+- [Let the LLM supply the citation form of a chunk](0028-let-the-llm-supply-the-citation-form.md) — The Chunk field comes from the LLM as CardContent.citation_form, not the extractor, because the citation article is not in the parse.
 
 <!-- docs-index:end -->

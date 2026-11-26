@@ -2,7 +2,7 @@
 title: Local setup
 summary: Clone, install with uv, enable pre-commit and run make check; what each make target runs and how to install a released version.
 status: active
-updated: 2026-11-24
+updated: 2026-11-26
 ---
 
 # Local setup
@@ -28,6 +28,8 @@ uv run learn-german --version
 ```
 
 Secrets go in a git-ignored `.env`; copy `.env.example` and fill in the keys. Tests never need them (R28).
+
+The spaCy model (about 500 MB) is the optional extra `model` ([0027](../decisions/0027-settle-shared-dependencies-before-parallel-tracks.md)). `make check` does not need it. To run the `nlp` tests or the real extractor, install it once with `uv sync --extra model`.
 
 ## Make targets
 
