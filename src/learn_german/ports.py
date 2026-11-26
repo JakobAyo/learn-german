@@ -107,6 +107,14 @@ class Clock(Protocol):
         ...
 
 
+class OccurrencePicker(Protocol):
+    """Chooses which occurrence of a chunk feeds its cards (0032)."""
+
+    def pick(self, occurrences: Sequence[Candidate]) -> Candidate:
+        """One of the occurrences, given oldest first. Raises ValueError if there are none."""
+        ...
+
+
 # --- Storage ---------------------------------------------------------------------------------
 
 
@@ -142,6 +150,15 @@ class CandidateRepository(Protocol):
 
     def for_key(self, key: ChunkKey) -> list[Candidate]:
         """All occurrences of a chunk key across sources, in the order they were first added."""
+        ...
+
+    def pending_chunks(self) -> list[PendingChunk]:
+        """Every chunk key with occurrences whose local state is not done, ordered by key.
+
+        `occurrences` counts the key's candidate rows across all sources (R13). `missing` is
+        the note kinds with no row in the pushed-notes record (0025); what Anki already has
+        is checked later by a filter (0033). `kind` is that of the key's oldest occurrence.
+        """
         ...
 
 
