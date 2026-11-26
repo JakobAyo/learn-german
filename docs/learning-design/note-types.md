@@ -13,7 +13,9 @@ Defines what v1 puts into Anki: the deck, the two note types, their fields and w
 
 ## Deck
 
-`learn-german::chunks` by default, configurable. The tool only adds notes to this deck and never touches other decks.
+`learn-german::chunks` by default, configurable. The tool only adds notes to this deck and never touches other decks. `ensure_setup` creates it if it is missing.
+
+A note of the tool's note type counts as present wherever it is, so a note moved to another deck is not pushed again ([0039](../decisions/0039-read-existing-keys-per-note-type-across-the-collection.md)).
 
 ## Shared fields
 
@@ -26,7 +28,17 @@ Both note types start with the same fields, in this order. `ChunkKey` is first b
 | `Meaning` | eine Entscheidung treffen = entscheiden, sich festlegen | LLM, one line in German |
 | `Answer` | Die Regierung hat die Entscheidung getroffen, die Steuer zu senken. | LLM, shortened source sentence |
 
-`ChunkKey` is not shown on any card.
+`ChunkKey` is not shown on any card. Field values are plain text: the gateway HTML-escapes them, so `<` or `&` in a sentence shows as written ([0040](../decisions/0040-add-notes-one-call-each-and-split-ankiconnect-errors.md)).
+
+## Cards
+
+Each note type has one card type, named `Transformation` and `Translation`. The templates and the shared stylesheet are files in `src/learn_german/adapters/anki/templates/`; their rendering is pinned by golden files in `tests/data/anki/`.
+
+- The back of both starts with the front, then a line (`{{FrontSide}}` and `<hr id="answer">`), so the model answer stands under the prompt.
+- German text carries `lang="de"`; the translation prompt carries `lang="{{HintLanguage}}"`.
+- The chunk is bold, the meaning italic and smaller. Night mode has its own colours.
+
+`ensure_setup` creates a missing note type but never edits an existing one, so the cards can be restyled in Anki ([0038](../decisions/0038-create-missing-note-types-and-check-only-their-fields.md)).
 
 ## Transformation note type: `learn-german-transformation-v1`
 
@@ -37,7 +49,7 @@ Extra field:
 | `Prompt` | Die Regierung hat entschieden, die Steuer zu senken. |
 
 - **Front:** "Rewrite in nominal style, using an NVV:" followed by `Prompt`.
-- **Back:** `Answer`, then `Chunk` and `Meaning`.
+- **Back:** the front, then `Answer`, then `Chunk` and `Meaning`.
 
 When the NVV has no direct verb, `Prompt` uses the closest plain paraphrase (*wirksam werden* for *in Kraft treten*).
 
@@ -51,7 +63,7 @@ Extra fields:
 | `HintLanguage` | en |
 
 - **Front:** `Prompt`, then "Use: " followed by `Chunk`.
-- **Back:** `Answer`, then `Meaning`.
+- **Back:** the front, then `Answer`, then `Meaning`.
 
 `HintLanguage` records which language the prompt is in, so a later change of the setting can be told apart from old notes.
 
@@ -64,12 +76,17 @@ Every note gets:
 - `model::<id>`, for example `model::claude-opus-5-5`
 - `run::<run-id>`, for example `run::run-20261124-1530`
 
+Anki splits tags on whitespace, so whitespace inside a provider or model name becomes `_`. `NoteBuilder` in `application/notes/` builds the fields and tags.
+
 ## Versioning
 
 The version is part of the note type name (`-v1`). A field change creates the next version and migrates existing notes into it; the old type is removed once empty.
+
+The v1 field names and order are asserted literally in `tests/unit/notes/test_note_type_specs.py`, so a field change fails CI until the new version exists. If a note type in Anki has other fields than the tool's, `ensure_setup` stops with `NoteTypeMismatchError` instead of adding notes.
 
 ## Related
 
 - [Requirements](../product/requirements.md)
 - [0006 Card types](../decisions/0006-use-transformation-and-translation-prompt-cards.md)
 - [0012 Card content](../decisions/0012-make-both-cards-practise-the-chunk.md)
+- [AnkiConnect](../integrations/ankiconnect.md)
