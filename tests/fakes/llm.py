@@ -17,14 +17,20 @@ def content_for(request: CardRequest) -> CardContent:
 class FakeProvider:
     """Implements `ports.LLMProvider` without a network. Records every request it gets.
 
-    Created before the parallel tracks (0026) so M7 can use it; M5 owns it.
+    Returns `content_for(request)`, or the content set in `responses` for the request's key,
+    and raises `GenerationError` for keys in `fail`. Created before the parallel tracks
+    (0026) so M7 can use it; M5 owns it.
     """
 
-    def __init__(self, name: str = "fake", model: str = "fake-model") -> None:
+    def __init__(
+        self, name: str = "fake", model: str = "fake-model", prompt_version: str = "fake-v1"
+    ) -> None:
         self._name = name
         self._model = model
+        self._prompt_version = prompt_version
         self.requests: list[CardRequest] = []
         self.fail: set[ChunkKey] = set()
+        self.responses: dict[ChunkKey, CardContent] = {}
 
     @property
     def name(self) -> str:
@@ -34,8 +40,12 @@ class FakeProvider:
     def model(self) -> str:
         return self._model
 
+    @property
+    def prompt_version(self) -> str:
+        return self._prompt_version
+
     def generate(self, request: CardRequest) -> CardContent:
         self.requests.append(request)
         if request.key in self.fail:
             raise GenerationError(f"fake provider fails for {request.key}")
-        return content_for(request)
+        return self.responses.get(request.key) or content_for(request)

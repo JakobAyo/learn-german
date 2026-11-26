@@ -67,7 +67,11 @@ class Ranker(Protocol):
 
 
 class LLMProvider(Protocol):
-    """Generates card content for one chunk (R17, 0004)."""
+    """Generates card content for one chunk (R17, 0004).
+
+    Decorators such as the cache and the sanity checks wrap a provider and pass `name`,
+    `model` and `prompt_version` through, so they look like the provider they wrap.
+    """
 
     @property
     def name(self) -> str:
@@ -75,10 +79,22 @@ class LLMProvider(Protocol):
         ...
 
     @property
-    def model(self) -> str: ...
+    def model(self) -> str:
+        """Model ID used in tags and cache keys, for example `claude-opus-5-5`."""
+        ...
+
+    @property
+    def prompt_version(self) -> str:
+        """Version of the prompt the provider sends. A new version invalidates the cache (0035)."""
+        ...
 
     def generate(self, request: CardRequest) -> CardContent:
-        """Raises `FatalError` on bad credentials and `ItemError` on unusable output."""
+        """Content for one chunk's notes.
+
+        Raises `FatalError` when every further call would fail too (bad key, unknown model,
+        no credit) and `ItemError` when only this chunk failed (unusable output, a server
+        error after retries).
+        """
         ...
 
 
