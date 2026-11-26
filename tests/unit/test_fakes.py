@@ -2,18 +2,26 @@
 
 import pytest
 
-from learn_german.domain.errors import AnkiUnavailableError, GenerationError, PushError
+from learn_german.domain.errors import (
+    AnkiUnavailableError,
+    GenerationError,
+    PushError,
+    SourceFetchError,
+)
 from learn_german.domain.models import (
     CHUNK_KEY_FIELD,
+    Candidate,
     CardRequest,
     ChunkKey,
     ChunkKind,
     NoteDraft,
     NoteKind,
 )
-from learn_german.ports import AnkiGateway, LLMProvider
+from learn_german.ports import AnkiGateway, ChunkExtractor, LLMProvider, SourceAdapter
 from tests.fakes.anki import FakeAnkiGateway
+from tests.fakes.extractors import FakeExtractor
 from tests.fakes.llm import FakeProvider
+from tests.fakes.sources import FakeSource
 
 KEY = ChunkKey("entscheidung|treffen")
 
@@ -53,3 +61,29 @@ def test_fake_provider_records_requests_and_can_fail() -> None:
     assert fake.requests == [request]
     with pytest.raises(GenerationError):
         provider.generate(request)
+
+
+def test_fake_extractor_finds_trigger_words_with_context() -> None:
+    extractor: ChunkExtractor = FakeExtractor()
+
+    found = extractor.extract("Es regnete. Der Rat traf eine Entscheidung. Dann war Ruhe.")
+
+    assert found == [
+        Candidate(
+            KEY,
+            ChunkKind.NVV,
+            "Der Rat traf eine Entscheidung.",
+            "Es regnete. Der Rat traf eine Entscheidung. Dann war Ruhe.",
+        )
+    ]
+
+
+def test_fake_source_serves_texts_and_can_fail() -> None:
+    fake = FakeSource({"fake:a": "Ein Text."})
+    adapter: SourceAdapter = fake
+    fake.fail["fake:b"] = "blocked"
+
+    assert adapter.fetch("fake:a").text == "Ein Text."
+    with pytest.raises(SourceFetchError, match="blocked"):
+        adapter.fetch("fake:b")
+    assert fake.fetched == ["fake:a", "fake:b"]
