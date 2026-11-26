@@ -1,0 +1,32 @@
+# Light verbs (Funktionsverben) that form Nomen-Verb-Verbindungen (0016, 0029).
+# One infinitive per line, lowercase, including a separable prefix when the verb has one
+# (aufnehmen: Kontakt aufnehmen), see 0030. Sorted with ä, ö, ü as a, o, u and ß as ss.
+# Every verb added here can add false positives: run the nlp tests after a change (0031).
+aufnehmen
+ausüben
+bringen
+ergreifen
+erheben
+erteilen
+fassen
+finden
+führen
+geben
+gehen
+geraten
+halten
+kommen
+legen
+leisten
+liegen
+nehmen
+setzen
+spielen
+stehen
+stellen
+stoßen
+treffen
+treten
+üben
+versetzen
+ziehen
