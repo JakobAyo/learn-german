@@ -78,6 +78,8 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Check robots.txt per site and redirect, and require 150 words of article text](decisions/0043-check-robots-txt-per-site-and-redirect-and-require-150-words.md) — robots.txt is read like the standard library does and checked again per redirected site; at most five redirects; under 150 words counts as a paywall.
 - [Normalise source text by paragraph before hashing](decisions/0044-normalise-source-text-by-paragraph-before-hashing.md) — Source text is NFC with blank-line paragraphs and collapsed whitespace; the content hash is its SHA-256, and files are stored by absolute path.
 - [Build the CLI with create_app and stream outcomes per source](decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md) — create_app takes bootstrap Overrides so tests swap plug-ins; use cases yield one outcome per source, printed at once by presenters; exit codes 0, 1 and 2.
+- [Check settings and Anki before selecting, and keep dry runs read-only](decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md) — sync checks the hint language and API key while wiring, then sets Anki up before selecting; a dry run only asks Anki whether it answers and writes nothing but the LLM cache.
+- [Push a chunk's notes one call each and save progress per chunk](decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md) — sync adds each missing note in its own add_notes call and saves pushed notes and errors per chunk; a fatal error keeps what was pushed, prints the summary so far and exits 2.
 
 ### [development/](development/CLAUDE.md)
 
