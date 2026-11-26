@@ -1,11 +1,13 @@
 ---
 title: Parallel tracks
-summary: File ownership of the parallel tracks M2, M4, M5 and M6, frozen files, reserved decision numbers, and the path from worktree to develop and main.
-status: active
+summary: Historical record of how the parallel tracks M2, M4, M5 and M6 were run: file ownership, frozen files, reserved decision numbers, worktree to develop.
+status: deprecated
 updated: 2026-11-26
 ---
 
 # Parallel tracks
+
+> **Historical.** All four tracks are finished and merged into `develop`. The remaining milestones, M3, M7 and M8, run one at a time on branches off `develop` ([0041](../decisions/0041-run-the-remaining-milestones-sequentially.md)), and the ownership and frozen-file rules below no longer apply. This page is kept as a record of how M2, M4, M5 and M6 were built.
 
 ## Purpose
 
