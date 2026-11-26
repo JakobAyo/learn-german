@@ -26,8 +26,8 @@ Highest first:
 | TOML key | Environment variable | Default | Meaning |
 |---|---|---|---|
 | `hint_language` | `LEARN_GERMAN_HINT_LANGUAGE` | none, required for generation | ISO 639 code of the translation-prompt language, for example `en` (R16) |
-| `cap` | `LEARN_GERMAN_CAP` | `10` | Most new chunks per `sync`, each giving two notes (R12) |
-| `provider` | `LEARN_GERMAN_PROVIDER` | `anthropic` | LLM provider (R17) |
+| `cap` | `LEARN_GERMAN_CAP` | `10` | Most new chunks per `sync`, each giving two notes (R12); `sync --cap N` overrides it |
+| `provider` | `LEARN_GERMAN_PROVIDER` | `anthropic` | LLM provider (R17); v1 knows only `anthropic`, and another name stops `sync` |
 | `model` | `LEARN_GERMAN_MODEL` | `claude-opus-5-5` | LLM model ID (0015) |
 | `deck` | `LEARN_GERMAN_DECK` | `learn-german::chunks` | Anki deck the tool owns (0016) |
 | `anki_connect_url` | `LEARN_GERMAN_ANKI_CONNECT_URL` | `http://127.0.0.1:8765` | AnkiConnect endpoint of the running Anki app (0003) |
@@ -45,7 +45,7 @@ cap = 5
 
 - An unknown key in `config.toml` is an error, so a typo does not go unnoticed. Unrelated variables in `.env` are ignored.
 - An invalid value in any source stops the command with a message that names the setting.
-- The hint language and the API key are checked only by the commands that need them, so `add` and `status` work without them.
+- The hint language and the API key are checked only by the commands that need them, so `add`, `status` and `reextract` work without them. `sync`, including `sync --dry-run`, checks both before it opens the database or asks Anki ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)).
 
 ## Related
 

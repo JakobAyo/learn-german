@@ -40,6 +40,22 @@ def drafts(*kinds: NoteKind) -> tuple[NoteDraft, ...]:
     return BUILDER.build(REQUEST, CONTENT, kinds or tuple(NoteKind))
 
 
+# --- check_available -------------------------------------------------------------------------
+
+
+def test_check_available_asks_only_for_the_version(anki: MockAnkiConnect) -> None:
+    anki.gateway().check_available()
+
+    assert anki.actions == ["version"]
+    assert DECK not in anki.decks
+    assert anki.models == {}
+
+
+def test_check_available_rejects_an_old_ankiconnect() -> None:
+    with pytest.raises(AnkiUnavailableError, match="Update the add-on"):
+        MockAnkiConnect(version=5).gateway().check_available()
+
+
 # --- ensure_setup ----------------------------------------------------------------------------
 
 

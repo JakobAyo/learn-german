@@ -6,8 +6,15 @@ The CLI prints what these return; nothing else in the package writes to the term
 from learn_german.application.add_sources import AddResult, AddSummary, SourceOutcome
 from learn_german.application.reextract import ReextractOutcome
 from learn_german.application.status import SourceSummary, StatusReport
+from learn_german.application.sync import ChunkOutcome, SyncRun
 from learn_german.domain.errors import LearnGermanError
-from learn_german.domain.models import NoteKind, PendingChunk
+from learn_german.domain.models import (
+    CHUNK_KEY_FIELD,
+    NoteDraft,
+    NoteKind,
+    PendingChunk,
+    RunSummary,
+)
 
 _RESULT_WIDTH = max(len(result.value) for result in AddResult)
 _ALL_NOTE_KINDS = frozenset(NoteKind)
@@ -112,3 +119,79 @@ def reextract_summary(outcomes: list[ReextractOutcome]) -> str:
         f"Extracted {plural(len(outcomes), 'source')} again: "
         f"{plural(added, 'new occurrence')}, {removed} removed."
     )
+
+
+# --- sync ------------------------------------------------------------------------------------
+
+_SYNC_LABEL_WIDTH = len("would add")
+
+
+def anki_unavailable_warning(reason: str) -> str:
+    """Printed to stderr when a dry run cannot reach Anki (0046)."""
+    return (
+        f"Warning: {reason}\nThe dry run goes on without asking Anki which notes it already "
+        "has, so it may show notes Anki would reject as duplicates."
+    )
+
+
+def sync_start(run: SyncRun) -> str:
+    """What the run is about to do, printed before the first LLM call."""
+    if not run.selected:
+        return "Nothing to sync: no pending chunk needs notes. Add sources with `learn-german add`."
+    mode = "Dry run" if run.dry_run else "Run"
+    chunks = plural(len(run.selected), "chunk")
+    return f"{mode} {run.run_id}: {chunks} selected. Tags: {' '.join(run.tags)}"
+
+
+def chunk_outcome(outcome: ChunkOutcome, *, dry_run: bool) -> str:
+    """One chunk's line, and in a dry run the notes it would add (R23)."""
+    if outcome.error is not None:
+        added = ""
+        if outcome.notes:
+            added = f" ({_kinds(outcome.notes)} note added)"
+        return f"{'failed'.ljust(_SYNC_LABEL_WIDTH)}  {outcome.key}{added}: {outcome.error}"
+    label = "would add" if dry_run else "added"
+    line = f"{label.ljust(_SYNC_LABEL_WIDTH)}  {outcome.key}: {_kinds(outcome.notes)}"
+    if not dry_run:
+        return line
+    width = max((len(name) for note in outcome.notes for name, _ in note.fields), default=0)
+    return "\n".join([line, *(_note_preview(note, width) for note in outcome.notes)])
+
+
+def _kinds(notes: tuple[NoteDraft, ...]) -> str:
+    return ", ".join(note.note_kind.value for note in notes)
+
+
+def _note_preview(note: NoteDraft, width: int) -> str:
+    fields = [(name, value) for name, value in note.fields if name != CHUNK_KEY_FIELD]
+    lines = [f"    {note.note_kind.value} note"]
+    lines += [f"      {(name + ':').ljust(width + 1)} {value}" for name, value in fields]
+    return "\n".join(lines)
+
+
+def run_summary(summary: RunSummary, *, stopped: bool = False) -> str:
+    """The end of a run: counts, then every failed chunk (0014)."""
+    chunks = plural(len(summary.completed), "chunk")
+    if summary.dry_run:
+        lines = [
+            f"Dry run {summary.run_id}: {chunks} ready, "
+            f"{plural(summary.notes_added, 'note')} would be added.",
+            "Nothing was written to Anki. The generated content is cached, so the next sync "
+            "does not pay for it again.",
+        ]
+    else:
+        lines = [
+            f"Run {summary.run_id}: {chunks} done, {plural(summary.notes_added, 'note')} added "
+            f"to Anki, tagged run::{summary.run_id}."
+        ]
+    if summary.failures:
+        count = len(summary.failures)
+        them = "it" if count == 1 else "them"
+        lines.append(
+            f"Failed: {plural(count, 'chunk')}. {'It stays' if count == 1 else 'They stay'} "
+            f"pending, and the next sync tries {them} again:"
+        )
+        lines += [f"  {failure.key}: {failure.message}" for failure in summary.failures]
+    if stopped:
+        lines.append("The run stopped early because of the error below.")
+    return "\n".join(lines)

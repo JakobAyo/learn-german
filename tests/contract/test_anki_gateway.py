@@ -104,6 +104,15 @@ def test_added_notes_count_for_their_own_kind_only(make_anki: Callable[..., Anki
     assert gateway.existing_keys(TRANSLATION) == {DISPOSAL}
 
 
+def test_check_available_changes_nothing(make_anki: Callable[..., Anki]) -> None:
+    gateway = make_anki([(TRANSFORMATION, DECISION)]).gateway
+
+    gateway.check_available()
+
+    assert gateway.existing_keys(TRANSFORMATION) == {DECISION}
+    assert gateway.existing_keys(TRANSLATION) == frozenset()
+
+
 def test_setup_is_idempotent(make_anki: Callable[..., Anki]) -> None:
     gateway = make_anki().gateway
     gateway.add_notes(decision())
@@ -147,11 +156,12 @@ def test_notes_before_a_rejected_note_stay_added(make_anki: Callable[..., Anki])
 @pytest.mark.parametrize(
     "call",
     [
+        lambda gateway: gateway.check_available(),
         lambda gateway: gateway.ensure_setup(),
         lambda gateway: gateway.existing_keys(TRANSFORMATION),
         lambda gateway: gateway.add_notes(decision()),
     ],
-    ids=["ensure_setup", "existing_keys", "add_notes"],
+    ids=["check_available", "ensure_setup", "existing_keys", "add_notes"],
 )
 def test_unreachable_anki_is_fatal(
     make_anki: Callable[..., Anki], call: Callable[[AnkiGateway], object]

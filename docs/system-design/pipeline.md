@@ -39,7 +39,21 @@ Everything left of SQLite is free and local apart from fetching. Everything righ
 
 ## `sync`: select, generate, push
 
-A `sync` is one run: it gets a run ID ([0016](../decisions/0016-use-standard-python-tooling.md)) and ends with a run summary.
+A `sync` is one run: it gets a run ID ([0016](../decisions/0016-use-standard-python-tooling.md)) from the injected clock and ends with a run summary. The use case is `SyncService` in `application/sync.py`, wired by `bootstrap.sync_service`.
+
+```
+learn-german sync [--cap N] [--dry-run]
+```
+
+### Preflight
+
+Before anything costs money, in this order; each failure is fatal and exits 2 ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)):
+
+1. Hint language set (R16), checked while wiring, before the database is opened. A dry run needs it too.
+2. LLM provider known and its API key present, checked when `bootstrap` builds the provider. Nothing is sent yet.
+3. Anki: a real run calls `ensure_setup`, which creates the deck and missing note types and fails on unreachable Anki or mismatched fields. A dry run calls only `check_available`; if Anki does not answer it warns on stderr and selects without the Anki filter.
+
+### Stages
 
 | Stage | Interface | What it does |
 |---|---|---|
@@ -49,13 +63,21 @@ A `sync` is one run: it gets a run ID ([0016](../decisions/0016-use-standard-pyt
 | Cap | — | Keeps the top N chunks (`--cap`, then environment variable, then 10; R12). N counts chunks, not notes. |
 | Pick | Occurrence picker | `ShortestSentencePicker` chooses the sentence and context that feed the cards: the shortest sentence of at least ten words, else the longest; the most recent on ties ([0032](../decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md)). |
 | Generate | LLM provider (R17) | One call per chunk returns the shortened sentence, verbal-style rewrite, translation and meaning ([0012](../decisions/0012-make-both-cards-practise-the-chunk.md)). Responses are cached in SQLite. |
-| Push | AnkiConnect (R19) | Adds the missing notes for each chunk, tagged with provider, model and run ID (R22). |
+| Build | `NoteBuilder` | The chunk's missing note kinds, transformation before translation, tagged `learn-german`, `provider::…`, `model::…` and `run::…` (R22). |
+| Push | AnkiConnect (R19) | One `add_notes` call per note, so the notes added before a rejection are known ([0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md)). |
+| Record | `ChunkStateRepository` | One unit of work per chunk: a `pushed_notes` row per added note with the run ID, and the chunk's error recorded or cleared. |
 
 - Filtering and ranking happen at `sync` time, never at `add` time, because the deck and the occurrence counts change between commands.
 - Read to pick is `ChunkSelector.select(cap)` in `application/selection/`. It reads in two short unit-of-work blocks, before and after the filters, so the database is not held while Anki is asked; call it outside any `with uow:` block. Its result pairs each chunk with its picked occurrence and builds the `CardRequest`.
+- Generation runs outside any `with uow:` block, because the cache opens its own; the chunk's record block follows the push.
 - In `--dry-run` with Anki unreachable, the selector gets an empty filter chain, so deduplication rests on `pushed_notes` alone.
-- `--dry-run` runs every stage up to push and prints the notes instead of pushing them (R23). Its LLM calls are cached, so a following real `sync` does not pay again.
-- A failing chunk stays pending with its error recorded and the run continues; Anki being unreachable or a missing API key stops the run at once (R23a).
+- `--dry-run` runs every stage up to push and prints each note's fields instead of pushing (R23). It writes nothing to Anki, not even the deck or note types, and records no pushed notes or errors. Its LLM calls are cached, so a following real `sync` does not pay again.
+- An `ItemError` (unusable LLM output, a call that failed after retries, a rejected note) is recorded for its chunk and the run continues; the chunk stays pending, or partial if its first note went in, and the next sync adds only what is missing from the cached content (R23a, [0014](../decisions/0014-keep-progress-when-a-run-fails-partway.md)).
+- A `FatalError` (Anki gone, the API key rejected, a database failure) stops the run at once. The notes already added for the chunk in hand are recorded, the summary so far is printed and marked as stopped early, and the error goes to stderr.
+
+### Output and exit codes
+
+The run prints a header with the run ID and the tags of every note, one line per chunk as it finishes (`added`, `would add` or `failed`), in a dry run each note's fields, and a summary with the number of chunks and notes and every failed chunk with its error. With no pending chunk it says so and points to `add`. Exit codes: 0 when every chunk worked or nothing was pending, 1 when at least one chunk failed, 2 for a fatal or usage error.
 
 ## `reextract`
 
@@ -68,5 +90,7 @@ Lists the five most recent sources, the number of pending and partial chunks, an
 ## Related
 
 - [Ingest](ingest.md)
+- [Generation](generation.md)
+- [AnkiConnect](../integrations/ankiconnect.md)
 - [Requirements](../product/requirements.md)
 - [Note types](../learning-design/note-types.md)

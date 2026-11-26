@@ -107,5 +107,7 @@ Status meanings for records: `draft` = proposed and not yet agreed, `active` = a
 - [Check robots.txt per site and redirect, and require 150 words of article text](0043-check-robots-txt-per-site-and-redirect-and-require-150-words.md) — robots.txt is read like the standard library does and checked again per redirected site; at most five redirects; under 150 words counts as a paywall.
 - [Normalise source text by paragraph before hashing](0044-normalise-source-text-by-paragraph-before-hashing.md) — Source text is NFC with blank-line paragraphs and collapsed whitespace; the content hash is its SHA-256, and files are stored by absolute path.
 - [Build the CLI with create_app and stream outcomes per source](0045-build-the-cli-with-create-app-and-stream-outcomes.md) — create_app takes bootstrap Overrides so tests swap plug-ins; use cases yield one outcome per source, printed at once by presenters; exit codes 0, 1 and 2.
+- [Check settings and Anki before selecting, and keep dry runs read-only](0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md) — sync checks hint language and API key while wiring, then sets Anki up before selecting; a dry run only checks Anki answers and writes only the LLM cache.
+- [Push a chunk's notes one call each and save progress per chunk](0047-push-notes-one-call-each-and-save-progress-per-chunk.md) — sync adds each note in its own add_notes call and saves pushed notes and errors per chunk; a fatal error keeps what was pushed and prints the summary so far.
 
 <!-- docs-index:end -->

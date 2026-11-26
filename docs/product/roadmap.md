@@ -31,7 +31,7 @@ Splits v1 (as fixed in [Requirements](requirements.md) and decisions 0002 to 001
 | M4 | Selection | Filter chain, occurrence ranker, cap, occurrence picker | implemented, not yet released |
 | M5 | Generation | LLM port, Claude adapter, versioned prompt, cache decorator | implemented, not yet released |
 | M6 | Anki export | AnkiConnect gateway, v1 note types, note builder, tags | implemented, not yet released |
-| M7 | `sync` | **First cards in Anki**: end-to-end run with partial-failure handling and dry run | 0.x |
+| M7 | `sync` | **First cards in Anki**: end-to-end run with partial-failure handling and dry run | implemented, not yet released |
 | M8 | v1 hardening | README, setup docs, manual release checklist, quality measurement | 1.0.0 |
 
 ```
@@ -247,6 +247,8 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 - Running sync twice creates no duplicates.
 
 **Done when:** on the owner's machine, `add` then `sync --cap 3` puts 6 correct notes into Anki, and a repeated `sync` adds nothing.
+
+**Decisions:** [0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md), [0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md).
 
 ---
 

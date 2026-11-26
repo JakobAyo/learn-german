@@ -21,6 +21,9 @@ class FakeAnkiGateway:
         for note_kind, key in existing:
             self._keys[note_kind].add(key)
 
+    def check_available(self) -> None:
+        self._check_available()
+
     def ensure_setup(self) -> None:
         self._check_available()
         self.setup_calls += 1

@@ -31,7 +31,7 @@ Explains the generate stage of `sync` ([Pipeline](pipeline.md)): one LLM call pe
 CachingProvider(CheckedProvider(AnthropicProvider.create(api_key, model=settings.model)), uow, clock)
 ```
 
-The order matters: the checks run before the cache, so only content that passed is stored. Any other provider goes in place of `AnthropicProvider` and gets both decorators unchanged. Bootstrap does this wiring in M7.
+The order matters: the checks run before the cache, so only content that passed is stored. Any other provider goes in place of `AnthropicProvider` and gets both decorators unchanged. `bootstrap.generation_stack` does this wiring, and `bootstrap.llm_provider` picks the provider by the `provider` setting.
 
 `CachingProvider.generate` opens its own unit-of-work blocks, so `sync` calls it before opening the chunk's `with uow:` block, not inside it.
 

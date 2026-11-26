@@ -101,6 +101,11 @@ class LLMProvider(Protocol):
 class AnkiGateway(Protocol):
     """The tool's deck and note types in Anki (R19, R20)."""
 
+    def check_available(self) -> None:
+        """Ask Anki whether it answers, changing nothing. `sync --dry-run` uses it instead of
+        `ensure_setup` (0046). Raises `FatalError` if Anki is unreachable."""
+        ...
+
     def ensure_setup(self) -> None:
         """Create the deck and missing note types. Raises `FatalError` if Anki is unreachable
         or an existing note type has different fields."""
