@@ -11,6 +11,10 @@ class AnkiActionError(FatalError):
     """
 
     def __init__(self, action: str, detail: str) -> None:
-        super().__init__(f"AnkiConnect action {action!r} failed: {detail}")
+        super().__init__(
+            f"AnkiConnect action {action!r} failed: {detail}. Check that Anki shows no open "
+            "dialog and that AnkiConnect's apiKey is null (Tools, Add-ons, AnkiConnect, "
+            "Config), then run the command again."
+        )
         self.action = action
         self.detail = detail

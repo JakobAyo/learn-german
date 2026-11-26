@@ -59,7 +59,10 @@ class ChunkSelector:
         for chunk in chosen:
             if not occurrences[chunk.key]:
                 # Another command (reextract) removed its last occurrence in the meantime.
-                logger.warning("Skipping %s: it no longer occurs in any source", chunk.key)
+                logger.warning(
+                    "Skipping %s: it no longer occurs in any source (reextract removed it)",
+                    chunk.key,
+                )
                 continue
             selected.append(SelectedChunk(chunk, self._picker.pick(occurrences[chunk.key])))
         return selected

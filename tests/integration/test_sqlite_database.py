@@ -132,7 +132,7 @@ def test_database_newer_than_code_is_refused(tmp_path: Path) -> None:
     path = tmp_path / "lg.db"
     _raw(path).execute(f"PRAGMA user_version = {LATEST + 1}")
 
-    with pytest.raises(DatabaseError, match="Upgrade learn-german"):
+    with pytest.raises(DatabaseError, match="Install the newer learn-german"):
         open_database(path)
 
 

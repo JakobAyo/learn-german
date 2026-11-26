@@ -56,8 +56,8 @@ class SpacyParser:
             except OSError as exc:
                 raise NlpModelMissingError(
                     f"The spaCy model {self._model} is not installed. Install learn-german "
-                    "with the model extra (learn-german[model]), or run `uv sync --extra model` "
-                    "in a development checkout."
+                    "again with the model extra, learn-german[model], as the README shows, or "
+                    "run `uv sync --extra model` in a development checkout."
                 ) from exc
         return self._nlp
 

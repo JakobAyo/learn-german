@@ -61,7 +61,8 @@ def migrate(connection: sqlite3.Connection, migrations: list[Migration] | None =
     if current > latest:
         raise DatabaseError(
             f"The database has schema version {current}, but this learn-german only knows up to "
-            f"{latest}. Upgrade learn-german."
+            f"{latest}. Install the newer learn-german that wrote it (uv tool install --force "
+            "with its tag)."
         )
     for migration in sorted(migrations, key=lambda migration: migration.version):
         if migration.version > current:
@@ -85,7 +86,10 @@ def _apply(connection: sqlite3.Connection, migration: Migration) -> None:
     except sqlite3.Error as exc:
         if connection.in_transaction:
             connection.execute("ROLLBACK")
-        raise DatabaseError(f"Database migration {migration.name} failed: {exc}") from exc
+        raise DatabaseError(
+            f"Database migration {migration.name} failed and was undone: {exc}. Check that the "
+            "database file is writable and the disk has space, then run the command again."
+        ) from exc
 
 
 def open_database(location: Path | Literal[":memory:"]) -> sqlite3.Connection:

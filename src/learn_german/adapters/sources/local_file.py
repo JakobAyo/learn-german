@@ -46,7 +46,9 @@ def _read_utf8(path: Path) -> str:
     except FileNotFoundError as exc:
         raise SourceFetchError(f"{path} does not exist. Check the path.") from exc
     except OSError as exc:
-        raise SourceFetchError(f"Cannot read {path}: {exc.strerror or exc}.") from exc
+        raise SourceFetchError(
+            f"Cannot read {path}: {exc.strerror or exc}. Check that it is a file you may read."
+        ) from exc
     try:
         # utf-8-sig drops the byte-order mark some Windows editors write.
         return raw.decode("utf-8-sig")

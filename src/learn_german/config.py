@@ -101,7 +101,8 @@ class Settings(BaseSettings):
         if unknown:
             raise ConfigError(
                 f"{toml_settings.toml_file_path} has unknown settings: {', '.join(unknown)}. "
-                f"Known settings: {', '.join(cls.model_fields)}."
+                f"Remove or correct them; the known settings are "
+                f"{', '.join(cls.model_fields)}."
             )
         return (init_settings, env_settings, dotenv_settings, toml_settings)
 
@@ -119,7 +120,8 @@ class Settings(BaseSettings):
         """The Claude API key. Raises `MissingCredentialsError` if unset."""
         if self.anthropic_api_key is None or not self.anthropic_api_key.get_secret_value():
             raise MissingCredentialsError(
-                "ANTHROPIC_API_KEY is not set. Export it or put it in a .env file in the "
+                "ANTHROPIC_API_KEY is not set. Create a key in the Claude Console "
+                "(platform.claude.com), then export it or put it in a .env file in the "
                 "directory you run learn-german from."
             )
         return self.anthropic_api_key.get_secret_value()
@@ -150,8 +152,8 @@ def load_settings(
             for error in exc.errors()
         )
         raise ConfigError(
-            f"Invalid settings ({problems}). Check {toml_file} and the "
-            f"{ENV_PREFIX}* environment variables."
+            f"Invalid settings ({problems}). Fix the value in {toml_file}, in .env or in "
+            f"the {ENV_PREFIX}* environment variables."
         ) from exc
     except tomllib.TOMLDecodeError as exc:
         raise ConfigError(f"{toml_file} is not valid TOML: {exc}. Fix or remove it.") from exc
