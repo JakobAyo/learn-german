@@ -23,6 +23,6 @@ External systems: Anki, translation, audio and any LLM; how each is called and f
 
 ## Contents
 
-- (empty)
+- [Claude API](claude-api.md) — How AnthropicProvider calls the Claude API: settings, request, retries, how each failure is reported, cost, mocked tests and the eval script.
 
 <!-- docs-index:end -->
