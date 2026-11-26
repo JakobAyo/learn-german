@@ -1,6 +1,6 @@
 ---
 title: Parallel tracks
-summary: File ownership of the parallel tracks M2, M4, M5 and M6, frozen files, reserved decision numbers, and the path from worktree to main.
+summary: File ownership of the parallel tracks M2, M4, M5 and M6, frozen files, reserved decision numbers, and the path from worktree to develop and main.
 status: active
 updated: 2026-11-26
 ---
@@ -76,12 +76,21 @@ Changed only with the owner's agreement, usually as a separate small PR that eve
 - **Generated indexes:** the `docs-index` sections of every `CLAUDE.md` are generated. On a merge conflict there, take either side and run `python3 tools/docs/build_index.py --docs-root docs`.
 - **Done means `make check` passes** in the worktree, with tests for every new behaviour.
 
-## From worktree to main
+## From worktree to develop and main
 
 1. Commit in small Conventional Commits on the track branch. Agents do not push.
-2. Before the PR, run `git fetch origin && git merge origin/main`, resolve conflicts (only generated indexes should conflict), and run `make check` again.
-3. The owner pushes the branch and opens one PR into `main`, titled `feat: …` with the milestone in it, for example `feat: add NVV extractor (M2)`.
-4. After the squash merge, the owner syncs `develop` (`git checkout develop && git pull && git merge origin/main && git push`), and every other open track merges `origin/main` again.
+2. When the track is done, run `git merge develop` in the worktree (all worktrees share one repository, so the local `develop` is current). Resolve conflicts (only generated indexes should conflict) and run `make check` again. The agent ends with a one-line Conventional Commit summary of the milestone, for example `feat: add NVV extractor (M2)`.
+3. The owner merges the track into `develop` from the main checkout: `git merge --no-ff feat/<track> -m "feat: … (Mn)"`. Every other open track then runs `git merge develop` again.
+4. Whenever one or more milestones are on `develop`, the owner opens the usual `develop` → `main` PR. Its body lists every milestone since the last release, so release-please writes one changelog entry each:
+
+   ```
+   BEGIN_COMMIT_OVERRIDE
+   feat: add NVV extractor (M2)
+   feat: add chunk selection (M4)
+   END_COMMIT_OVERRIDE
+   ```
+
+5. After the squash merge, sync `develop` as in [0022](../decisions/0022-keep-a-long-lived-develop-branch.md).
 
 ## Related
 

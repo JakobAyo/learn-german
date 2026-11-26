@@ -58,7 +58,7 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Release as features land, not once per milestone](decisions/0023-release-as-features-land.md) — M2 to M6 run as parallel tracks after M1, so 0.x versions count up as features merge and no longer map to milestones; 1.0.0 stays tied to M8.
 - [Read settings with pydantic-settings, layered flag, environment, .env and TOML](decisions/0024-read-settings-with-pydantic-settings.md) — pydantic-settings layers flags, LEARN_GERMAN_ variables, .env and config.toml; unknown TOML keys fail and the hint language is an ISO 639 code.
 - [Track note progress per chunk key, not per occurrence](decisions/0025-track-note-progress-per-chunk-key.md) — Candidates are occurrences without status; pushed notes and errors are stored per chunk key, and pending, partial or done is derived from them.
-- [Run M2, M4, M5 and M6 as parallel tracks with file ownership](decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md) — Four agents build M2, M4, M5 and M6 at once in worktrees; each track owns fixed files, shared contracts are frozen, each merges into main alone.
+- [Run M2, M4, M5 and M6 as parallel tracks with file ownership](decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md) — Four agents build M2, M4, M5 and M6 at once in worktrees; each track owns fixed files, shared contracts are frozen, and tracks merge into develop.
 - [Settle runtime dependencies up front, httpx2 and the spaCy model extra](decisions/0027-settle-shared-dependencies-before-parallel-tracks.md) — anthropic, httpx2 and spaCy 3.8 are added before the tracks; httpx2 replaces httpx as the SDK uses it; the spaCy model is an optional extra.
 - [Let the LLM supply the citation form of a chunk](decisions/0028-let-the-llm-supply-the-citation-form.md) — The Chunk field comes from the LLM as CardContent.citation_form, not the extractor, because the citation article is not in the parse.
 
@@ -69,7 +69,7 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 - [CI and releases](development/ci-and-releases.md) `[draft]` — CI jobs that gate main, repository settings, the Conventional Commits PR-title rule, and how release-please produces versions, tags and CHANGELOG.md.
 - [Coding conventions](development/coding-conventions.md) `[draft]` — Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
 - [Configuration](development/configuration.md) — Every setting with its default, environment variable and TOML key, where config.toml and .env are read from, and the order in which sources override each other.
-- [Parallel tracks](development/parallel-tracks.md) — File ownership of the parallel tracks M2, M4, M5 and M6, frozen files, reserved decision numbers, and the path from worktree to main.
+- [Parallel tracks](development/parallel-tracks.md) — File ownership of the parallel tracks M2, M4, M5 and M6, frozen files, reserved decision numbers, and the path from worktree to develop and main.
 - [Local setup](development/setup.md) — Clone, install with uv, enable pre-commit and run make check; what each make target runs and how to install a released version.
 - [Testing strategy](development/testing-strategy.md) `[draft]` — Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 

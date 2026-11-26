@@ -135,7 +135,7 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 **Deliverables**
 
 - `LocalFileSource`: `.txt`, UTF-8, whitespace normalised, SHA-256 of the normalised text as content hash.
-- `NewsUrlSource`: `httpx` with timeouts and a generic User-Agent, robots.txt checked before the article is fetched, only the given URL, `trafilatura` main-text extraction. 401, 402 and 403 responses and too-short text raise a clear error that points to the `.txt` fallback.
+- `NewsUrlSource`: `httpx2` ([0027](../decisions/0027-settle-shared-dependencies-before-parallel-tracks.md)) with timeouts and a generic User-Agent, robots.txt checked before the article is fetched, only the given URL, `trafilatura` main-text extraction. 401, 402 and 403 responses and too-short text raise a clear error that points to the `.txt` fallback.
 - Adapter selection: each adapter answers `can_handle(ref)`; the first match wins.
 - Use cases: `AddSources` (skip known sources unless `--force`, ingest, extract and store one source per unit of work, per-source report, non-zero exit if any failed), `ShowStatus`, `Reextract` (the four 0017 rules).
 - CLI commands `add` (with `--from`), `status` and `reextract` as thin wrappers; formatting lives in a presenter module.
