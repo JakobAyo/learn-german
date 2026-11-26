@@ -1,6 +1,6 @@
 ---
 title: Push a chunk's notes one call each and save progress per chunk
-summary: sync adds each missing note in its own add_notes call and saves pushed notes and errors per chunk; a fatal error keeps what was pushed, prints the summary so far and exits 2.
+summary: sync adds each note in its own add_notes call and saves pushed notes and errors per chunk; a fatal error keeps what was pushed and prints the summary so far.
 status: active
 updated: 2026-11-26
 ---

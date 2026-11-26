@@ -37,7 +37,7 @@ See [Configuration](../development/configuration.md). The request timeout (30 s)
 | `adapters/anki/errors.py` | `AnkiActionError` (fatal). |
 | `application/notes/` | `NoteBuilder` and `run_tags`: card content to the two `NoteDraft`s. |
 
-Bootstrap wires `AnkiConnectGateway(AnkiConnectClient(settings.anki_connect_url), deck=settings.deck)` in M7.
+`bootstrap.sync_service` wires `AnkiConnectGateway(AnkiConnectClient(settings.anki_connect_url, http_client=…), deck=settings.deck)` with a 30-second timeout.
 
 ## Protocol
 
@@ -45,7 +45,7 @@ Every request is an HTTP `POST` of `{"action": …, "version": 6, "params": {…
 
 | Action | Sent by | Params |
 |---|---|---|
-| `version` | `ensure_setup` | none; the answer must be 6 or more |
+| `version` | `check_available`, `ensure_setup` | none; the answer must be 6 or more. `check_available` sends nothing else, for `sync --dry-run` ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)) |
 | `deckNames`, `createDeck` | `ensure_setup` | `deck`; created only if missing |
 | `modelNames` | `ensure_setup` | none |
 | `modelFieldNames` | `ensure_setup`, for each note type that exists | `modelName` |
@@ -81,7 +81,7 @@ No test talks to a real Anki.
 
 ## Manual smoke test
 
-Run before a release that touches `adapters/anki/` or the note types, against a throwaway profile, never the real collection. Until `sync` exists (M7) it drives the gateway from Python.
+Run before a release that touches `adapters/anki/` or the note types, against a throwaway profile, never the real collection. It drives the gateway from Python, so it checks the adapter without the LLM; the end-to-end check with `sync` is in the [Roadmap](../product/roadmap.md#m7-sync).
 
 1. In Anki, File, Switch Profile, Add: create `learn-german-smoke` and open it. AnkiConnect is shared across profiles.
 2. From the repository, run `uv run python`, then:

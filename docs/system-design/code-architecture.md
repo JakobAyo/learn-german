@@ -64,7 +64,7 @@ src/learn_german/
     add_sources.py       # AddSources, SourceOutcome, AddSummary
     status.py            # ShowStatus, StatusReport
     reextract.py         # Reextract
-    sync.py              # M7
+    sync.py              # SyncService, SyncRun, ChunkOutcome
   adapters/
     nlp/                 # extractor.py (NvvExtractor), parse.py (the only spaCy module),
                          # tokens.py, match.py, keys.py, lexicon.py,
@@ -79,7 +79,8 @@ src/learn_german/
     clock.py             # SystemClock
   config.py
   bootstrap.py           # composition root: extractor registry, source adapters,
-                         # Overrides, ingest_services()
+                         # LLM provider registry, Overrides, ingest_services(),
+                         # sync_service()
   cli/
     app.py               # create_app(overrides): commands only, no logic
     presenters.py        # plain-text lines and summaries
@@ -113,10 +114,13 @@ Ports are `typing.Protocol`s, so adapters and fakes need no inheritance and mypy
 - `OccurrencePicker` was added in M4.
 - `SourceRepository.find_id` takes the reference or the hash alone, `SourceRepository.replace` overwrites a stored source in place, and `CandidateRepository.remove` deletes a source's occurrences, for `add --force` and `reextract` ([0042](../decisions/0042-recognise-known-sources-before-fetching-and-refresh-them-in-place.md)).
 - `AnkiGateway.existing_keys` reads notes of the tool's note type anywhere in the collection, not only in the deck ([0039](../decisions/0039-read-existing-keys-per-note-type-across-the-collection.md)).
+- `AnkiGateway.check_available` asks Anki whether it answers and changes nothing, for `sync --dry-run` ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)).
 
 Some v1 strategies live in `application/`, not `adapters/`, because they do no I/O: the ranker and the picker are pure, and `AlreadyInDeckFilter` reaches Anki only through the `AnkiGateway` port, so its tests use `FakeAnkiGateway`. `ChunkSelector` in `application/selection/selector.py` runs pending chunks through filter, ranker, cap and picker.
 
 The ingest use cases (`AddSources`, `ShowStatus`, `Reextract`) are described in [Ingest](ingest.md). `AddSources.run` and `Reextract.run` yield one outcome per source after its unit of work commits, so the CLI prints progress as it happens ([0045](../decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md)).
+
+`SyncService.start(cap, dry_run)` runs the Anki preflight and `ChunkSelector.select`, and returns a `SyncRun`. `SyncRun.chunks()` generates and pushes one chunk at a time and yields a `ChunkOutcome` after the chunk's unit of work commits; `SyncRun.summary()` is the `RunSummary` so far, also after a fatal error ([0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md)). `bootstrap.sync_service(settings, overrides)` checks the hint language and the provider's key, then wires `SyncService` with the provider stack, the Anki gateway, and two selectors: one with `AlreadyInDeckFilter`, and one with an empty `FilterChain` for a dry run without Anki. `Overrides` also takes `provider` (still wrapped in the checks and cache), `anki`, and `anki_http_client` for the real gateway over a mock.
 
 `with uow:` is one transaction: it commits when the block ends normally and rolls back when it raises. Tables and the chunk status are in [Data model](../data/data-model.md).
 
@@ -140,12 +144,12 @@ Not used on purpose: abstract base class hierarchies (Protocols suffice), a serv
 
 | Type | Meaning | Examples | `sync` reaction |
 |---|---|---|---|
-| `FatalError` | Every further step would fail | `ConfigError`, `MissingCredentialsError`, `DatabaseError`, `NlpModelMissingError`, `AnkiUnavailableError`, `NoteTypeMismatchError`, `LLMAccessError`, `AnkiActionError` | Stop at once, print summary, exit 2 |
+| `FatalError` | Every further step would fail | `ConfigError`, `MissingCredentialsError`, `DatabaseError`, `NlpModelMissingError`, `AnkiUnavailableError`, `NoteTypeMismatchError`, `LLMAccessError`, `AnkiActionError` | Record the notes already added for the chunk, stop at once, print the summary so far, exit 2 |
 | `ItemError` | Only this source or chunk failed | `SourceFetchError`, `DuplicateSourceError`, `GenerationError`, `PushError`, `LLMRequestError` | Record the error, continue, exit 1 at the end |
 
 Shared errors live in `domain/errors.py`. An adapter that needs its own error subclasses a domain error in its own `errors.py` ([0026](../decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md)): `LLMAccessError` (the provider refused the key, account or model) and `LLMRequestError` (one call failed after retries) in `adapters/llm/` ([0037](../decisions/0037-call-claude-with-a-json-schema-and-split-errors-into-fatal-and-item.md)), and `AnkiActionError` (an AnkiConnect action failed or answered in the wrong shape) in `adapters/anki/`, which the gateway narrows to a `PushError` when only one note is affected ([0040](../decisions/0040-add-notes-one-call-each-and-split-ankiconnect-errors.md)).
 
-Adapters catch their library's exceptions and re-raise one of these with `raise … from exc`. Only the use-case loop catches `ItemError`; nothing catches `FatalError` except the CLI, which turns it into a message and an exit code. `SourceFetchError` covers every source that cannot be read: no adapter for the reference, a missing or non-UTF-8 file, a page robots.txt forbids, a refused or paywalled page, a timeout, or too little text.
+Adapters catch their library's exceptions and re-raise one of these with `raise … from exc`. Only the use-case loop catches `ItemError`; nothing handles `FatalError` except the CLI, which turns it into a message and an exit code. `SyncRun` only saves the notes it has pushed on the way out. `SourceFetchError` covers every source that cannot be read: no adapter for the reference, a missing or non-UTF-8 file, a page robots.txt forbids, a refused or paywalled page, a timeout, or too little text.
 
 ## Data flow
 
