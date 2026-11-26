@@ -84,6 +84,7 @@ src/learn_german/
   cli/
     app.py               # create_app(overrides): commands only, no logic
     presenters.py        # plain-text lines and summaries
+    logs.py              # configure_logging(verbose), RedactSecrets (0048)
 tests/
   fakes/                 # shared fakes: FakeAnkiGateway, FakeProvider, FixedClock,
                          # FakeSource, FakeExtractor
@@ -120,7 +121,7 @@ Some v1 strategies live in `application/`, not `adapters/`, because they do no I
 
 The ingest use cases (`AddSources`, `ShowStatus`, `Reextract`) are described in [Ingest](ingest.md). `AddSources.run` and `Reextract.run` yield one outcome per source after its unit of work commits, so the CLI prints progress as it happens ([0045](../decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md)).
 
-`SyncService.start(cap, dry_run)` runs the Anki preflight and `ChunkSelector.select`, and returns a `SyncRun`. `SyncRun.chunks()` generates and pushes one chunk at a time and yields a `ChunkOutcome` after the chunk's unit of work commits; `SyncRun.summary()` is the `RunSummary` so far, also after a fatal error ([0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md)). `bootstrap.sync_service(settings, overrides)` checks the hint language and the provider's key, then wires `SyncService` with the provider stack, the Anki gateway, and two selectors: one with `AlreadyInDeckFilter`, and one with an empty `FilterChain` for a dry run without Anki. `Overrides` also takes `provider` (still wrapped in the checks and cache), `anki`, and `anki_http_client` for the real gateway over a mock.
+`SyncService.start(cap, dry_run)` runs the Anki preflight and `ChunkSelector.select`, and returns a `SyncRun`. `SyncRun.chunks()` generates and pushes one chunk at a time and yields a `ChunkOutcome` after the chunk's unit of work commits; `SyncRun.summary()` is the `RunSummary` so far, also after a fatal error ([0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md)). `bootstrap.sync_service(settings, overrides)` checks the hint language and the provider's key, then wires `SyncService` with the provider stack, the Anki gateway, and two selectors: one with `AlreadyInDeckFilter`, and one with an empty `FilterChain` for a dry run without Anki. `Overrides` also takes `provider` (still wrapped in the checks and cache), `anki`, `anki_http_client` for the real gateway over a mock, and `llm_http_client` for the real Claude adapter over a mock.
 
 `with uow:` is one transaction: it commits when the block ends normally and rolls back when it raises. Tables and the chunk status are in [Data model](../data/data-model.md).
 
