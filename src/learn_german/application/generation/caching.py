@@ -96,6 +96,7 @@ class CachingProvider:
                 logger.debug("LLM cache hit for %s", request.key)
                 return content
             logger.warning("Ignoring an unreadable LLM cache entry for %s", request.key)
+        logger.debug("LLM cache miss for %s; asking %s", request.key, self.name)
         content = self._inner.generate(request)
         with self._uow:
             self._uow.llm_cache.put(

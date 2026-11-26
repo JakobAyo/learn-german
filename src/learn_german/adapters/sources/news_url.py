@@ -86,6 +86,7 @@ class NewsUrlSource:
                 f"{self._min_words} are needed. That usually means a paywall, a login or a "
                 f"page that is not an article. {_FALLBACK}"
             )
+        logger.info("Extracted %d words of article text from %s", words, ref)
         return Source(
             ref=ref,
             kind=SourceKind.NEWS_URL,
@@ -110,6 +111,7 @@ class NewsUrlSource:
 
     def _require_allowed(self, url: str, ref: str) -> None:
         if not self._robots_for(url, ref).can_fetch(ROBOTS_AGENT, url):
+            logger.debug("robots.txt forbids %s", url)
             raise SourceFetchError(
                 f"The site's robots.txt does not allow automated fetching of {url}, so "
                 f"learn-german leaves it alone. {_FALLBACK}"
@@ -125,6 +127,7 @@ class NewsUrlSource:
     def _read_robots(self, origin: str, ref: str) -> RobotFileParser:
         response = self._get(f"{origin}/robots.txt", ref, follow_redirects=True)
         status = response.status_code
+        logger.debug("Read robots.txt of %s: HTTP %s", origin, status)
         # The same reading of status codes as urllib.robotparser.RobotFileParser.read().
         if status in (401, 403):
             lines = ["User-agent: *", "Disallow: /"]
@@ -142,8 +145,9 @@ class NewsUrlSource:
         return parser
 
     def _get(self, url: str, ref: str, *, follow_redirects: bool) -> httpx2.Response:
+        logger.debug("GET %s", url)
         try:
-            return self._http.get(
+            response = self._http.get(
                 url,
                 headers=self._headers,
                 follow_redirects=follow_redirects,
@@ -159,6 +163,10 @@ class NewsUrlSource:
                 f"Cannot fetch {url} for {ref} ({exc}). Check the address and your network "
                 f"connection. {_FALLBACK}"
             ) from exc
+        logger.debug(
+            "%s answered HTTP %s, %d bytes", url, response.status_code, len(response.content)
+        )
+        return response
 
 
 def _require_ok(response: httpx2.Response, ref: str) -> None:

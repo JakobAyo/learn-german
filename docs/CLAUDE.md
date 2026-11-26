@@ -80,6 +80,7 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Build the CLI with create_app and stream outcomes per source](decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md) — create_app takes bootstrap Overrides so tests swap plug-ins; use cases yield one outcome per source, printed at once by presenters; exit codes 0, 1 and 2.
 - [Check settings and Anki before selecting, and keep dry runs read-only](decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md) — sync checks hint language and API key while wiring, then sets Anki up before selecting; a dry run only checks Anki answers and writes only the LLM cache.
 - [Push a chunk's notes one call each and save progress per chunk](decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md) — sync adds each note in its own add_notes call and saves pushed notes and errors per chunk; a fatal error keeps what was pushed and prints the summary so far.
+- [Log with stdlib logging behind a global --verbose flag](decisions/0048-log-with-stdlib-logging-behind-a-global-verbose-flag.md) — A global --verbose/-v option turns on DEBUG for the learn_german loggers only, on stderr; third-party loggers stay at WARNING and a filter masks API keys.
 
 ### [development/](development/CLAUDE.md)
 
@@ -89,6 +90,7 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 - [Coding conventions](development/coding-conventions.md) `[draft]` — Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
 - [Configuration](development/configuration.md) — Every setting with its default, environment variable and TOML key, where config.toml and .env are read from, and the order in which sources override each other.
 - [Parallel tracks](development/parallel-tracks.md) `[deprecated]` — Historical record of how the parallel tracks M2, M4, M5 and M6 were run: file ownership, frozen files, reserved decision numbers, worktree to develop.
+- [Release checklist](development/release-checklist.md) — Manual end-to-end check against real Anki and the real Claude API: fresh install, add, dry run, six notes, no duplicates, rendering, failure paths.
 - [Local setup](development/setup.md) — Clone, install with uv, enable pre-commit and run make check; what each make target runs and how to install a released version.
 - [Testing strategy](development/testing-strategy.md) `[draft]` — Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 
@@ -97,7 +99,7 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 External systems: Anki, translation, audio and any LLM; how each is called and fails.
 
 - [AnkiConnect](integrations/ankiconnect.md) — How the Anki adapter talks to the running Anki app through AnkiConnect: setup, settings, actions used, failure modes, tests and the manual smoke test.
-- [Claude API](integrations/claude-api.md) — How AnthropicProvider calls the Claude API: settings, request, retries, how each failure is reported, cost, mocked tests and the eval script.
+- [Claude API](integrations/claude-api.md) — How AnthropicProvider calls the Claude API: setup, key, model, request, failures and their messages, cost, caching, logging, tests and the eval script.
 
 ### [learning-design/](learning-design/CLAUDE.md)
 
@@ -117,6 +119,7 @@ Learning goals, scope, non-goals and roadmap of the extractor.
 
 Experiments, evaluations and summaries of outside advice that inform decisions.
 
+- [Card quality of v1](research/card-quality-v1.md) `[draft]` — Method, rubric and empty results table for measuring how often v1's generated cards are wrong, and how the error rate decides on 0005.
 - [DeepSeek chat: chunks and sentence transformation](research/deepseek-chat-advice.md) — Summary and critique of the DeepSeek advice: mine Nomen-Verb-Verbindungen with spaCy, cloze and transformation cards via genanki.
 
 ### [system-design/](system-design/CLAUDE.md)

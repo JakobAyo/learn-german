@@ -15,6 +15,11 @@ from learn_german.domain.errors import DatabaseError
 
 logger = logging.getLogger(__name__)
 
+_RETRY = (
+    "Check that the disk has space and that no other learn-german command is running, then "
+    "run the command again."
+)
+
 
 class SqliteUnitOfWork:
     """One transaction per `with` block across all repositories (see `ports.UnitOfWork`).
@@ -49,13 +54,17 @@ class SqliteUnitOfWork:
         if exc is not None:
             self._rollback()
             if isinstance(exc, sqlite3.Error):
-                raise DatabaseError(f"A database write failed and was undone: {exc}") from exc
+                raise DatabaseError(
+                    f"A database write failed and was undone: {exc}. {_RETRY}"
+                ) from exc
             return
         try:
             self._connection.execute("COMMIT")
         except sqlite3.Error as commit_exc:
             self._rollback()
-            raise DatabaseError(f"Saving to the database failed: {commit_exc}") from commit_exc
+            raise DatabaseError(
+                f"Saving to the database failed: {commit_exc}. {_RETRY}"
+            ) from commit_exc
 
     def _rollback(self) -> None:
         # After disk-full, I/O errors or interrupts SQLite has already rolled back by itself,

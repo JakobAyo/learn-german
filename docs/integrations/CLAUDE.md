@@ -24,6 +24,6 @@ External systems: Anki, translation, audio and any LLM; how each is called and f
 ## Contents
 
 - [AnkiConnect](ankiconnect.md) — How the Anki adapter talks to the running Anki app through AnkiConnect: setup, settings, actions used, failure modes, tests and the manual smoke test.
-- [Claude API](claude-api.md) — How AnthropicProvider calls the Claude API: settings, request, retries, how each failure is reported, cost, mocked tests and the eval script.
+- [Claude API](claude-api.md) — How AnthropicProvider calls the Claude API: setup, key, model, request, failures and their messages, cost, caching, logging, tests and the eval script.
 
 <!-- docs-index:end -->

@@ -6,6 +6,7 @@ variables carry the `LEARN_GERMAN_` prefix, except `ANTHROPIC_API_KEY`. This is 
 module that reads the environment.
 """
 
+import logging
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
@@ -21,6 +22,8 @@ from pydantic_settings import (
 )
 
 from learn_german.domain.errors import ConfigError, MissingCredentialsError
+
+logger = logging.getLogger(__name__)
 
 APP_NAME: Final = "learn-german"
 ENV_PREFIX: Final = "LEARN_GERMAN_"
@@ -101,7 +104,8 @@ class Settings(BaseSettings):
         if unknown:
             raise ConfigError(
                 f"{toml_settings.toml_file_path} has unknown settings: {', '.join(unknown)}. "
-                f"Known settings: {', '.join(cls.model_fields)}."
+                f"Remove or correct them; the known settings are "
+                f"{', '.join(cls.model_fields)}."
             )
         return (init_settings, env_settings, dotenv_settings, toml_settings)
 
@@ -119,7 +123,8 @@ class Settings(BaseSettings):
         """The Claude API key. Raises `MissingCredentialsError` if unset."""
         if self.anthropic_api_key is None or not self.anthropic_api_key.get_secret_value():
             raise MissingCredentialsError(
-                "ANTHROPIC_API_KEY is not set. Export it or put it in a .env file in the "
+                "ANTHROPIC_API_KEY is not set. Create a key in the Claude Console "
+                "(platform.claude.com), then export it or put it in a .env file in the "
                 "directory you run learn-german from."
             )
         return self.anthropic_api_key.get_secret_value()
@@ -136,6 +141,13 @@ def load_settings(
     Raises `ConfigError` if a value is invalid, a key is unknown or the TOML cannot be parsed.
     """
     toml_file = default_config_file() if config_file is None else config_file
+    logger.debug(
+        "Reading settings from %s (%s) and %s (%s)",
+        toml_file,
+        "found" if toml_file.is_file() else "not found",
+        env_file,
+        "found" if env_file is not None and env_file.is_file() else "not found",
+    )
 
     class _Sourced(Settings):
         model_config = SettingsConfigDict(toml_file=toml_file, env_file=env_file)
@@ -150,8 +162,8 @@ def load_settings(
             for error in exc.errors()
         )
         raise ConfigError(
-            f"Invalid settings ({problems}). Check {toml_file} and the "
-            f"{ENV_PREFIX}* environment variables."
+            f"Invalid settings ({problems}). Fix the value in {toml_file}, in .env or in "
+            f"the {ENV_PREFIX}* environment variables."
         ) from exc
     except tomllib.TOMLDecodeError as exc:
         raise ConfigError(f"{toml_file} is not valid TOML: {exc}. Fix or remove it.") from exc

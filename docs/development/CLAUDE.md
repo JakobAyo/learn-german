@@ -26,6 +26,7 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 - [Coding conventions](coding-conventions.md) `[draft]` — Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
 - [Configuration](configuration.md) — Every setting with its default, environment variable and TOML key, where config.toml and .env are read from, and the order in which sources override each other.
 - [Parallel tracks](parallel-tracks.md) `[deprecated]` — Historical record of how the parallel tracks M2, M4, M5 and M6 were run: file ownership, frozen files, reserved decision numbers, worktree to develop.
+- [Release checklist](release-checklist.md) — Manual end-to-end check against real Anki and the real Claude API: fresh install, add, dry run, six notes, no duplicates, rendering, failure paths.
 - [Local setup](setup.md) — Clone, install with uv, enable pre-commit and run make check; what each make target runs and how to install a released version.
 - [Testing strategy](testing-strategy.md) `[draft]` — Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 

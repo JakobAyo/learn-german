@@ -20,7 +20,7 @@ States what is tested at which layer and with which doubles, so tests stay fast,
 | Integration | SQLite on a temp file, migrations; HTTP adapters against `httpx2.MockTransport` | Mocked transport only | `tests/integration/` | `test` |
 | NLP | Real `de_core_news_lg`: the 0011 key table and the golden corpus | None | `tests/nlp/` (marker `nlp`) | `nlp` |
 | End to end | CLI commands through typer's `CliRunner`, real SQLite, fake LLM, Anki, extractor | Fakes passed as `bootstrap.Overrides` to `create_app` | `tests/e2e/` | `test` |
-| Manual | Real Anki and the real Claude API | None | `development/release-checklist.md` | not in CI |
+| Manual | Real Anki and the real Claude API | None | [Release checklist](release-checklist.md) | not in CI |
 
 ## Rules
 

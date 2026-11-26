@@ -52,14 +52,32 @@ class ChunkSelector:
         """Up to `limit` chunks, best first (R12, R13)."""
         with self._uow:
             pending = self._uow.candidates.pending_chunks()
-        chosen = cap(self._ranker.rank(self._filter.apply(pending)), limit)
+        passed = self._filter.apply(pending)
+        chosen = cap(self._ranker.rank(passed), limit)
+        logger.info(
+            "Selected %d of %d pending chunks (%d left after filtering, cap %d)",
+            len(chosen),
+            len(pending),
+            len(passed),
+            limit,
+        )
         with self._uow:
             occurrences = {chunk.key: self._uow.candidates.for_key(chunk.key) for chunk in chosen}
         selected = []
         for chunk in chosen:
             if not occurrences[chunk.key]:
                 # Another command (reextract) removed its last occurrence in the meantime.
-                logger.warning("Skipping %s: it no longer occurs in any source", chunk.key)
+                logger.warning(
+                    "Skipping %s: it no longer occurs in any source (reextract removed it)",
+                    chunk.key,
+                )
                 continue
-            selected.append(SelectedChunk(chunk, self._picker.pick(occurrences[chunk.key])))
+            picked = self._picker.pick(occurrences[chunk.key])
+            logger.debug(
+                "%s: %d occurrences, picked the sentence of %d characters",
+                chunk.key,
+                len(occurrences[chunk.key]),
+                len(picked.sentence),
+            )
+            selected.append(SelectedChunk(chunk, picked))
         return selected

@@ -58,6 +58,7 @@ class AnkiConnectGateway:
 
     def existing_keys(self, note_kind: NoteKind) -> frozenset[ChunkKey]:
         spec = self._note_types[note_kind]
+        logger.debug("Reading the chunk keys of every %s note in Anki", spec.name)
         query = f'"note:{_escape_search(spec.name)}"'
         note_ids = self._client.invoke("findNotes", query=query)
         if not isinstance(note_ids, list):
@@ -67,7 +68,9 @@ class AnkiConnectGateway:
         infos = self._client.invoke("notesInfo", notes=note_ids)
         if not isinstance(infos, list):
             raise AnkiActionError("notesInfo", f"expected a list of notes, got {infos!r}")
-        return frozenset(key for info in infos if (key := _chunk_key(info, spec)) is not None)
+        keys = frozenset(key for info in infos if (key := _chunk_key(info, spec)) is not None)
+        logger.debug("Anki has %d %s notes with %d chunk keys", len(infos), spec.name, len(keys))
+        return keys
 
     def add_notes(self, drafts: Sequence[NoteDraft]) -> None:
         for draft in drafts:
@@ -143,12 +146,25 @@ def _chunk_key(info: object, spec: NoteTypeSpec) -> ChunkKey | None:
         if isinstance(field, dict) and isinstance(field.get("value"), str):
             value = html.unescape(field["value"]).strip()
     if value is None:
-        logger.warning("Skipping a %s note without a %s field", spec.name, CHUNK_KEY_FIELD)
+        logger.warning(
+            "Ignoring a %s note without a %s field; restore the field in Anki (Tools, Manage "
+            "Note Types) so duplicates of it can be recognised",
+            spec.name,
+            CHUNK_KEY_FIELD,
+        )
         return None
     try:
         return ChunkKey(value)
     except ValueError:
-        logger.warning("Skipping a %s note whose %s is %r", spec.name, CHUNK_KEY_FIELD, value)
+        logger.warning(
+            "Ignoring a %s note whose %s is %r, not a chunk key; fix or delete it in Anki "
+            "(Browse, search %s:%s)",
+            spec.name,
+            CHUNK_KEY_FIELD,
+            value,
+            CHUNK_KEY_FIELD,
+            value,
+        )
         return None
 
 

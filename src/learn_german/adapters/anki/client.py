@@ -62,6 +62,7 @@ class AnkiConnectClient:
             ) from exc
         result, error = self._unwrap(response, action)
         if error is not None:
+            logger.debug("AnkiConnect %s failed: %s", action, error)
             raise AnkiActionError(action, str(error))
         logger.debug("AnkiConnect answered %s", action)
         return result

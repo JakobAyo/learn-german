@@ -21,6 +21,7 @@ Experiments, evaluations and summaries of outside advice that inform decisions.
 
 ## Contents
 
+- [Card quality of v1](card-quality-v1.md) `[draft]` — Method, rubric and empty results table for measuring how often v1's generated cards are wrong, and how the error rate decides on 0005.
 - [DeepSeek chat: chunks and sentence transformation](deepseek-chat-advice.md) — Summary and critique of the DeepSeek advice: mine Nomen-Verb-Verbindungen with spaCy, cloze and transformation cards via genanki.
 
 <!-- docs-index:end -->

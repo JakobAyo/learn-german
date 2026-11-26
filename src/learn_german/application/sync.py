@@ -5,6 +5,7 @@ then generates and pushes one chunk at a time, yielding an outcome per chunk. Se
 run needs (hint language, API key) are checked by the composition root before this exists.
 """
 
+import logging
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 
@@ -20,6 +21,8 @@ from learn_german.domain.models import (
     RunSummary,
 )
 from learn_german.ports import AnkiGateway, Clock, LLMProvider, UnitOfWork
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +101,7 @@ class SyncRun:
         services = self._services
         request = selected.card_request(services.hint_language)
         kinds = tuple(kind for kind in NoteKind if kind in selected.chunk.missing)
+        logger.debug("%s needs %s", request.key, ", ".join(kinds))
         pushed: list[NoteDraft] = []
         error: ItemError | None = None
         settled = False
@@ -197,5 +201,6 @@ class SyncService:
         try:
             self.gateway.check_available()
         except AnkiUnavailableError as exc:
+            logger.debug("Dry run without Anki: %s", exc)
             return str(exc)
         return None

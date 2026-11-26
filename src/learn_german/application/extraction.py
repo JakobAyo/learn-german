@@ -5,11 +5,14 @@ extracted again (by `reextract` or `add --force`) follows the four 0017 rules, w
 by `plan_candidate_changes`.
 """
 
+import logging
 from collections.abc import Iterable, Sequence, Set
 from dataclasses import dataclass
 
 from learn_german.domain.models import Candidate, ChunkKey, SourceId
 from learn_german.ports import ChunkExtractor, UnitOfWork
+
+logger = logging.getLogger(__name__)
 
 
 def extract_candidates(extractors: Sequence[ChunkExtractor], text: str) -> list[Candidate]:
@@ -17,7 +20,17 @@ def extract_candidates(extractors: Sequence[ChunkExtractor], text: str) -> list[
 
     Raises whatever the extractors raise, such as `NlpModelMissingError`.
     """
-    return [candidate for extractor in extractors for candidate in extractor.extract(text)]
+    candidates: list[Candidate] = []
+    for extractor in extractors:
+        found = extractor.extract(text)
+        logger.debug(
+            "The %s extractor found %d occurrences of %d chunks",
+            extractor.kind,
+            len(found),
+            len({candidate.key for candidate in found}),
+        )
+        candidates += found
+    return candidates
 
 
 @dataclass(frozen=True, slots=True)

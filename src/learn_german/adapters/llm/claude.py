@@ -79,7 +79,8 @@ class AnthropicProvider:
         """
         if not api_key:
             raise MissingCredentialsError(
-                "ANTHROPIC_API_KEY is empty. Export it or put it in a .env file in the "
+                "ANTHROPIC_API_KEY is empty. Create a key in the Claude Console "
+                "(platform.claude.com), then export it or put it in a .env file in the "
                 "directory you run learn-german from."
             )
         client = anthropic.Anthropic(
@@ -101,6 +102,14 @@ class AnthropicProvider:
 
     def generate(self, request: CardRequest) -> CardContent:
         prompt = render_prompt(self._template, request)
+        logger.debug(
+            "Calling Claude %s for %s at %s effort (prompt %s, %d characters)",
+            self._model,
+            request.key,
+            self._effort,
+            PROMPT_VERSION,
+            len(prompt),
+        )
         try:
             message = self._client.messages.create(
                 model=self._model,
@@ -151,8 +160,9 @@ def _access_message(exc: anthropic.APIStatusError, model: str) -> str:
 def _answer_text(message: Message, request: CardRequest) -> str:
     if message.stop_reason == "refusal":
         raise GenerationError(
-            f"Claude declined to write cards for {request.key}. The chunk stays pending; "
-            "if it keeps failing, it can be left out of the deck."
+            f"Claude declined to write cards for {request.key}. The chunk stays pending, and "
+            "the next sync asks again; if Claude keeps declining, the chunk just keeps "
+            "failing and nothing else is affected."
         )
     if message.stop_reason == "max_tokens":
         raise GenerationError(

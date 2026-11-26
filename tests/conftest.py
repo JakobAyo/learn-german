@@ -1,6 +1,8 @@
 """Shared fixtures for every test layer."""
 
+import logging
 import os
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -26,3 +28,15 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     work.mkdir()
     monkeypatch.chdir(work)
     return home
+
+
+@pytest.fixture(autouse=True)
+def restore_logging() -> Iterator[None]:
+    """Undo the logging setup each CLI invocation makes (0048), so tests do not leak it."""
+    root = logging.getLogger()
+    package = logging.getLogger("learn_german")
+    handlers, root_level, package_level = list(root.handlers), root.level, package.level
+    yield
+    root.handlers[:] = handlers
+    root.setLevel(root_level)
+    package.setLevel(package_level)
