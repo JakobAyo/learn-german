@@ -54,10 +54,15 @@ pre-commit runs only the fast checks (ruff and the lock check). mypy, import-lin
 ## Installing a release
 
 ```bash
-uv tool install git+https://github.com/<owner>/learn-german@v0.1.0
+uv tool install 'learn-german[model] @ git+https://github.com/<owner>/learn-german@v1.0.0'
 ```
 
-From M2 on, add the `model` extra; see [CI and releases](ci-and-releases.md#installing-a-release).
+The `model` extra brings the spaCy model that `add` needs. The [README](../../README.md) covers the rest of a user install (Anki, configuration, workflow); see also [CI and releases](ci-and-releases.md#installing-a-release).
+
+## Debugging
+
+- `learn-german -v <command>` logs each fetch, the extraction counts, the selection, every LLM call and cache hit, and every AnkiConnect action to stderr ([0048](../decisions/0048-log-with-stdlib-logging-behind-a-global-verbose-flag.md)). The option goes before the command.
+- The state is one SQLite file (`~/.local/share/learn-german/learn-german.db` by default); `sqlite3` opens it read-only with `sqlite3 -readonly <path>`. See [Data model](../data/data-model.md).
 
 ## Related
 
