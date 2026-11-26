@@ -6,9 +6,19 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=2.14",
+    "httpx2>=2.16",
     "platformdirs>=4.3",
     "pydantic-settings>=2.6",
+    "spacy>=3.8,<3.9",
     "typer>=0.15",
+]
+
+[project.optional-dependencies]
+# The spaCy model is about 500 MB, so it is an extra: CI's fast jobs skip it (0027).
+# Its version must match spaCy's minor version.
+model = [
+    "de-core-news-lg @ https://github.com/explosion/spacy-models/releases/download/de_core_news_lg-3.8.0/de_core_news_lg-3.8.0-py3-none-any.whl",
 ]
 
 [project.scripts]
@@ -120,8 +130,11 @@ layers = [
 name = "Domain, ports and application do no I/O"
 type = "forbidden"
 source_modules = ["learn_german.domain", "learn_german.ports", "learn_german.application"]
-# Extend as later milestones add I/O libraries (httpx, spacy, anthropic, ...).
+# Extend as later milestones add I/O libraries (trafilatura in M3, ...).
 forbidden_modules = [
+    "anthropic",
+    "httpx2",
+    "spacy",
     "typer",
     "click",
     "pydantic",

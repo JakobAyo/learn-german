@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     provider: str = Field(default="anthropic", min_length=1, description="LLM provider.")
     model: str = Field(default="claude-opus-5-5", min_length=1, description="LLM model ID.")
     deck: str = Field(default="learn-german::chunks", min_length=1, description="Anki deck.")
+    anki_connect_url: str = Field(
+        default="http://127.0.0.1:8765",
+        pattern=r"^https?://",
+        description="AnkiConnect endpoint of the running Anki desktop app (0003).",
+    )
     database_path: Path = Field(
         default_factory=lambda: data_dir() / "learn-german.db",
         description="SQLite database file (0007).",
