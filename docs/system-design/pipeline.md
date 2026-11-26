@@ -43,7 +43,7 @@ A `sync` is one run: it gets a run ID ([0016](../decisions/0016-use-standard-pyt
 | Stage | Interface | What it does |
 |---|---|---|
 | Read | `CandidateRepository.pending_chunks()` | Every chunk key not yet done in `pushed_notes`, with its occurrence count and missing note kinds ([Data model](../data/data-model.md#pending-chunks)). |
-| Filter | Filter chain (R14) | `AlreadyInDeckFilter` narrows each chunk's missing note kinds to those the Anki deck lacks and drops chunks with none left (R11, [0033](../decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md)). Known-item filters plug in here later. |
+| Filter | Filter chain (R14) | `AlreadyInDeckFilter` narrows each chunk's missing note kinds to those Anki does not already have and drops chunks with none left (R11). "Already in the deck" means a note of the tool's note type anywhere in the collection, not only in the deck ([0033](../decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md), [0039](../decisions/0039-read-existing-keys-per-note-type-across-the-collection.md)). Known-item filters plug in here later. |
 | Rank | Ranker (R13) | `OccurrenceRanker`: partial chunks first, then most occurrences across all processed sources, then the chunk key ([0034](../decisions/0034-rank-partial-chunks-first-then-by-occurrences.md)). |
 | Cap | — | Keeps the top N chunks (`--cap`, then environment variable, then 10; R12). N counts chunks, not notes. |
 | Pick | Occurrence picker | `ShortestSentencePicker` chooses the sentence and context that feed the cards: the shortest sentence of at least ten words, else the longest; the most recent on ties ([0032](../decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md)). |

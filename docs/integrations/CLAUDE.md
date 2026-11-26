@@ -9,7 +9,7 @@ External systems: Anki, translation, audio and any LLM; how each is called and f
 
 ## What belongs here
 
-- Anki export via genanki (or AnkiConnect, if chosen)
+- Anki export through AnkiConnect into the running Anki app ([0003](../decisions/0003-push-notes-live-through-ankiconnect.md))
 - Translation and text-to-speech providers for the back of the card
 - Any LLM used to generate translations or transformation exercises: prompts, cost, rate limits
 - Content sources' access methods and terms (news sites, subtitle downloads)

@@ -1,11 +1,13 @@
 ---
 title: Run M2, M4, M5 and M6 as parallel tracks with file ownership
 summary: Four agents build M2, M4, M5 and M6 at once in worktrees; each track owns fixed files, shared contracts are frozen, and tracks merge into develop.
-status: active
+status: superseded
 updated: 2026-11-26
 ---
 
 # Run M2, M4, M5 and M6 as parallel tracks with file ownership
+
+> **Superseded by [0041](0041-run-the-remaining-milestones-sequentially.md)** (2026-11-26). The four tracks ran as decided here and are merged into `develop`. The remaining milestones, M3, M7 and M8, run one at a time on branches off `develop`, without file ownership or frozen files.
 
 ## Context
 
