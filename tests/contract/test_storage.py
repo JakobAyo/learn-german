@@ -16,6 +16,7 @@ from learn_german.domain.models import (
     ChunkKind,
     ChunkStatus,
     NoteKind,
+    PendingChunk,
     RunId,
     Source,
     SourceId,
@@ -186,6 +187,59 @@ def test_candidates_for_key_spans_sources(uow: UnitOfWork) -> None:
         sentences = [c.sentence for c in uow.candidates.for_key(KEY)]
 
     assert sentences == ["Die Regierung traf eine Entscheidung.", "Er traf eine Entscheidung."]
+
+
+def test_pending_chunks_of_empty_database_is_empty(uow: UnitOfWork) -> None:
+    with uow:
+        assert uow.candidates.pending_chunks() == []
+
+
+def test_pending_chunks_count_occurrences_across_sources_ordered_by_key(uow: UnitOfWork) -> None:
+    first = add_source(uow)
+    second = add_source(uow, make_source("https://example.org/b", "h2"))
+    with uow:
+        uow.candidates.add_all(first, [make_candidate(OTHER_KEY, "Sie stellte Geld bereit.")])
+        uow.candidates.add_all(first, [make_candidate(), make_candidate(sentence="Wir auch.")])
+        uow.candidates.add_all(second, [make_candidate()])
+
+    with uow:
+        chunks = uow.candidates.pending_chunks()
+
+    assert chunks == [
+        PendingChunk(KEY, ChunkKind.NVV, 3, frozenset(NoteKind)),
+        PendingChunk(OTHER_KEY, ChunkKind.NVV, 1, frozenset(NoteKind)),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("pushed", "missing"),
+    [
+        pytest.param([], set(NoteKind), id="none-pushed"),
+        pytest.param([NoteKind.TRANSLATION], {NoteKind.TRANSFORMATION}, id="one-pushed"),
+        pytest.param(list(NoteKind), None, id="both-pushed-is-left-out"),
+    ],
+)
+def test_pending_chunks_take_missing_kinds_from_pushed_notes(
+    uow: UnitOfWork, pushed: list[NoteKind], missing: set[NoteKind] | None
+) -> None:
+    source_id = add_source(uow)
+    with uow:
+        uow.candidates.add_all(source_id, [make_candidate()])
+        for kind in pushed:
+            uow.chunk_states.record_pushed(KEY, kind, run_id=RUN, at=DEFAULT_NOW)
+
+    with uow:
+        chunks = uow.candidates.pending_chunks()
+
+    assert [chunk.missing for chunk in chunks] == ([] if missing is None else [missing])
+
+
+def test_pending_chunks_ignore_pushed_notes_without_occurrences(uow: UnitOfWork) -> None:
+    with uow:
+        uow.chunk_states.record_pushed(KEY, NoteKind.TRANSLATION, run_id=RUN, at=DEFAULT_NOW)
+
+    with uow:
+        assert uow.candidates.pending_chunks() == []
 
 
 def test_candidates_need_a_stored_source(uow: UnitOfWork) -> None:

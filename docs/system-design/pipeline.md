@@ -2,7 +2,7 @@
 title: Pipeline
 summary: Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 status: active
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Pipeline
@@ -15,10 +15,10 @@ Shows the stages a source goes through on its way to Anki notes and which CLI co
 
 ```
 add                                     sync
-───────────────────────────────         ─────────────────────────────────────────────────────
-source ─► ingest ─► extract ─► SQLite ─► filter ─► rank ─► cap ─► generate ─► push ─► SQLite
-          (adapter) (extractors)         (dedupe,          (N     (LLM,       (Anki-
-                                          known)            chunks) cached)    Connect)
+───────────────────────────────         ────────────────────────────────────────────────────────────
+source ─► ingest ─► extract ─► SQLite ─► filter ─► rank ─► cap ─► pick ─► generate ─► push ─► SQLite
+          (adapter) (extractors)         (dedupe,          (top   (one    (LLM,       (Anki-
+                                          known)            N)     sent.)  cached)     Connect)
 
 reextract: stored text ─► extract ─► SQLite
 ```
@@ -42,13 +42,17 @@ A `sync` is one run: it gets a run ID ([0016](../decisions/0016-use-standard-pyt
 
 | Stage | Interface | What it does |
 |---|---|---|
-| Filter | Filter chain (R14) | Drops chunks that already have both notes in the Anki deck, checked per note type (R11). Known-item filters plug in here later. |
-| Rank | Ranker (R13) | Orders the remaining chunk keys by occurrences across all processed sources, most frequent first. |
-| Cap | — | Keeps the top N chunks (`--cap`, then environment variable, then 10; R12). |
+| Read | `CandidateRepository.pending_chunks()` | Every chunk key not yet done in `pushed_notes`, with its occurrence count and missing note kinds ([Data model](../data/data-model.md#pending-chunks)). |
+| Filter | Filter chain (R14) | `AlreadyInDeckFilter` narrows each chunk's missing note kinds to those the Anki deck lacks and drops chunks with none left (R11, [0033](../decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md)). Known-item filters plug in here later. |
+| Rank | Ranker (R13) | `OccurrenceRanker`: partial chunks first, then most occurrences across all processed sources, then the chunk key ([0034](../decisions/0034-rank-partial-chunks-first-then-by-occurrences.md)). |
+| Cap | — | Keeps the top N chunks (`--cap`, then environment variable, then 10; R12). N counts chunks, not notes. |
+| Pick | Occurrence picker | `ShortestSentencePicker` chooses the sentence and context that feed the cards: the shortest sentence of at least ten words, else the longest; the most recent on ties ([0032](../decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md)). |
 | Generate | LLM provider (R17) | One call per chunk returns the shortened sentence, verbal-style rewrite, translation and meaning ([0012](../decisions/0012-make-both-cards-practise-the-chunk.md)). Responses are cached in SQLite. |
 | Push | AnkiConnect (R19) | Adds the missing notes for each chunk, tagged with provider, model and run ID (R22). |
 
 - Filtering and ranking happen at `sync` time, never at `add` time, because the deck and the occurrence counts change between commands.
+- Read to pick is `ChunkSelector.select(cap)` in `application/selection/`. It reads in two short unit-of-work blocks, before and after the filters, so the database is not held while Anki is asked; call it outside any `with uow:` block. Its result pairs each chunk with its picked occurrence and builds the `CardRequest`.
+- In `--dry-run` with Anki unreachable, the selector gets an empty filter chain, so deduplication rests on `pushed_notes` alone.
 - `--dry-run` runs every stage up to push and prints the notes instead of pushing them (R23). Its LLM calls are cached, so a following real `sync` does not pay again.
 - A failing chunk stays pending with its error recorded and the run continues; Anki being unreachable or a missing API key stops the run at once (R23a).
 
@@ -56,9 +60,9 @@ A `sync` is one run: it gets a run ID ([0016](../decisions/0016-use-standard-pyt
 
 Reruns the extractors over stored source text after the extractor or the light-verb list changes. Candidates found again keep their status, new ones are added as pending, pending ones no longer found are removed, and ones that already have notes are kept.
 
-## Open questions
+## `status`
 
-- **Which occurrence feeds the cards.** A chunk key often has several candidate sentences across sources. `sync` must pick one to send to the LLM (for example the shortest, or the most recent). Decide when implementing generation.
+Lists pending chunks from `pending_chunks()`, ordered by the same `OccurrenceRanker` as `sync`, without asking Anki. A chunk Anki already has may show as pending there; `sync` skips it.
 
 ## Related
 

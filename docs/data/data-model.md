@@ -1,8 +1,8 @@
 ---
 title: Data model
-summary: SQLite tables, columns and constraints, how chunk status is derived from pushed notes, and how schema migrations are numbered and applied.
+summary: SQLite tables and constraints, how chunk status and pending chunks are derived from candidates and pushed notes, and how migrations are applied.
 status: active
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Data model
@@ -48,7 +48,7 @@ One row per occurrence of a chunk in a source sentence (R10). Many rows can shar
 | `sentence` | TEXT | The source sentence |
 | `context` | TEXT | The sentence with one sentence either side |
 
-`(source_id, chunk_key, sentence)` is unique. Adding the same occurrence again updates its kind and context instead of duplicating it. Occurrence counts for ranking (R13) are `COUNT(*)` grouped by `chunk_key`.
+`(source_id, chunk_key, sentence)` is unique. Adding the same occurrence again updates its kind and context instead of duplicating it. Occurrence counts for ranking (R13) are `COUNT(*)` grouped by `chunk_key`, so the same sentence in two sources counts twice.
 
 ### `pushed_notes`
 
@@ -93,6 +93,19 @@ Progress is tracked per chunk key, not per occurrence, because notes belong to a
 | both | `done` | none |
 
 A chunk with a row in `chunk_errors` keeps its status, so a failed chunk stays `pending` (or `partial`) and the next sync retries it. Anki stays the source of truth for deduplication (R11); `pushed_notes` is the local record and a fast path.
+
+## Pending chunks
+
+`CandidateRepository.pending_chunks()` is the one query selection and `status` start from. It returns one `PendingChunk` per distinct `chunk_key` in `candidates` whose status is not `done`, ordered by key:
+
+| Field | Comes from |
+|---|---|
+| `key` | `candidates.chunk_key` |
+| `kind` | `kind` of the key's oldest candidate row (lowest `id`) |
+| `occurrences` | `COUNT(*)` of the key's rows in `candidates`, over all sources |
+| `missing` | the note kinds with no row in `pushed_notes` for the key |
+
+A row in `pushed_notes` for a key without any candidate row is ignored. During `sync`, the Anki check can only narrow `missing` further: a note kind counts as present if `pushed_notes` or the Anki deck has it ([0033](../decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md)). So a locally done chunk is never sent to Anki, and a note the learner deleted in Anki is not re-created.
 
 ## Migrations
 
