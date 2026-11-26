@@ -19,7 +19,7 @@ States what is tested at which layer and with which doubles, so tests stay fast,
 | Contract | Every implementation of a port and its fake pass one shared suite | None (that is the point) | `tests/contract/` | `test` |
 | Integration | SQLite on a temp file, migrations; HTTP adapters against `httpx2.MockTransport` | Mocked transport only | `tests/integration/` | `test` |
 | NLP | Real `de_core_news_lg`: the 0011 key table and the golden corpus | None | `tests/nlp/` (marker `nlp`) | `nlp` |
-| End to end | CLI commands through typer's `CliRunner`, real SQLite, fake LLM and Anki | Fakes injected through `bootstrap` | `tests/e2e/` | `test` |
+| End to end | CLI commands through typer's `CliRunner`, real SQLite, fake LLM, Anki, extractor | Fakes passed as `bootstrap.Overrides` to `create_app` | `tests/e2e/` | `test` |
 | Manual | Real Anki and the real Claude API | None | `development/release-checklist.md` | not in CI |
 
 ## Rules
@@ -43,6 +43,8 @@ States what is tested at which layer and with which doubles, so tests stay fast,
 | Duplicate notes on re-run (R11) | E2E: running `sync` twice adds nothing; missing second note is created alone |
 | Progress lost on failure (0014) | E2E: one failing chunk leaves the others pushed and itself pending with its error |
 | Money spent before a fatal error | E2E: Anki unreachable or missing hint language stops before any LLM call |
+| A fetch ignores robots.txt (0013) | Integration test asserts a disallowed article URL is never requested |
+| Re-adding or re-extracting loses note history (0017) | The four reextract rules as one parametrised test; `--force` follows the same rules |
 | A layer imports an adapter | import-linter contracts in CI |
 
 ## Coverage

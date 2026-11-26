@@ -45,14 +45,7 @@ class SqliteSourceRepository:
         try:
             cursor = self._connection.execute(
                 f"INSERT INTO sources ({self._COLUMNS}) VALUES (?, ?, ?, ?, ?, ?)",  # noqa: S608
-                (
-                    source.ref,
-                    source.kind.value,
-                    source.title,
-                    _to_text(source.fetched_at),
-                    source.content_hash,
-                    source.text,
-                ),
+                self._values(source),
             )
         except sqlite3.IntegrityError as exc:
             raise DuplicateSourceError(
@@ -68,18 +61,49 @@ class SqliteSourceRepository:
         ).fetchone()
         return None if row is None else self._source(row)
 
-    def find_id(self, *, ref: str, content_hash: str) -> SourceId | None:
+    def find_id(
+        self, *, ref: str | None = None, content_hash: str | None = None
+    ) -> SourceId | None:
+        # A NULL parameter matches no row, so a missing argument drops out of the OR.
         row = self._connection.execute(
             "SELECT id FROM sources WHERE ref = ? OR content_hash = ? ORDER BY id LIMIT 1",
             (ref, content_hash),
         ).fetchone()
         return None if row is None else SourceId(int(row[0]))
 
+    def replace(self, source_id: SourceId, source: Source) -> None:
+        """Raises `DuplicateSourceError` if another source has the new ref or hash."""
+        try:
+            self._connection.execute(
+                """
+                UPDATE sources
+                SET ref = ?, kind = ?, title = ?, fetched_at = ?, content_hash = ?, text = ?
+                WHERE id = ?
+                """,
+                (*self._values(source), source_id),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise DuplicateSourceError(
+                f"{source.ref} now has the same address or text as another stored source, "
+                "so it was not replaced. Nothing to do."
+            ) from exc
+
     def all(self) -> list[tuple[SourceId, Source]]:
         rows = self._connection.execute(
             f"SELECT id, {self._COLUMNS} FROM sources ORDER BY id"  # noqa: S608
         )
         return [(SourceId(int(row[0])), self._source(row[1:])) for row in rows]
+
+    @staticmethod
+    def _values(source: Source) -> tuple[str | None, ...]:
+        return (
+            source.ref,
+            source.kind.value,
+            source.title,
+            _to_text(source.fetched_at),
+            source.content_hash,
+            source.text,
+        )
 
     @staticmethod
     def _source(row: tuple[Any, ...]) -> Source:
@@ -109,6 +133,12 @@ class SqliteCandidateRepository:
             DO UPDATE SET kind = excluded.kind, context = excluded.context
             """,
             ((source_id, c.key.value, c.kind.value, c.sentence, c.context) for c in candidates),
+        )
+
+    def remove(self, source_id: SourceId, candidates: Iterable[Candidate]) -> None:
+        self._connection.executemany(
+            "DELETE FROM candidates WHERE source_id = ? AND chunk_key = ? AND sentence = ?",
+            ((source_id, c.key.value, c.sentence) for c in candidates),
         )
 
     def for_source(self, source_id: SourceId) -> list[Candidate]:

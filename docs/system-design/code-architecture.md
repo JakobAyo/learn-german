@@ -60,9 +60,10 @@ src/learn_german/
                          # checks.py    CheckedProvider, check_card
     notes/               # builder.py   NoteBuilder
                          # tags.py      run_tags, TOOL_TAG
-    add_sources.py       # M3
-    status.py            # M3
-    reextract.py         # M3
+    extraction.py        # extract_candidates, the 0017 rules (plan/refresh_candidates)
+    add_sources.py       # AddSources, SourceOutcome, AddSummary
+    status.py            # ShowStatus, StatusReport
+    reextract.py         # Reextract
     sync.py              # M7
   adapters/
     nlp/                 # extractor.py (NvvExtractor), parse.py (the only spaCy module),
@@ -73,15 +74,18 @@ src/learn_german/
     anki/                # client.py (AnkiConnectClient), gateway.py (AnkiConnectGateway),
                          # note_types.py (NoteTypeSpec), errors.py, templates/*.html|css
     storage/sqlite/      # database.py, uow.py, repositories.py, migrations/NNNN_*.sql
-    sources/             # M3: local_file.py, news_url.py
+    sources/             # local_file.py (LocalFileSource), news_url.py (NewsUrlSource),
+                         # text.py (normalise_text, content_hash)
     clock.py             # SystemClock
   config.py
-  bootstrap.py           # composition root; today only the extractor registry
+  bootstrap.py           # composition root: extractor registry, source adapters,
+                         # Overrides, ingest_services()
   cli/
-    app.py               # commands only, no logic
-    presenters.py        # M3: tables and summaries
+    app.py               # create_app(overrides): commands only, no logic
+    presenters.py        # plain-text lines and summaries
 tests/
-  fakes/                 # shared fakes: FakeAnkiGateway, FakeProvider, FixedClock
+  fakes/                 # shared fakes: FakeAnkiGateway, FakeProvider, FixedClock,
+                         # FakeSource, FakeExtractor
   unit/  contract/  integration/  nlp/  e2e/
 tools/
   docs/                  # vendored docs validator
@@ -92,8 +96,8 @@ tools/
 
 | Port | v1 adapter | Test double | Requirement |
 |---|---|---|---|
-| `SourceAdapter` | `LocalFileSource`, `NewsUrlSource` (M3) | `FakeSource` (M3) | R4, R5 |
-| `ChunkExtractor` | `NvvExtractor` | `FakeExtractor` (M3) | R8, R9 |
+| `SourceAdapter` | `NewsUrlSource`, `LocalFileSource`, asked in that order | `FakeSource` | R4, R5 |
+| `ChunkExtractor` | `NvvExtractor` | `FakeExtractor` (trigger words, no spaCy) | R8, R9 |
 | `CandidateFilter` | `AlreadyInDeckFilter`, combined by `FilterChain` (in `application/selection/filters.py`) | not needed (no I/O) | R11, R14 |
 | `Ranker` | `OccurrenceRanker` (in `application/selection/ranking.py`) | not needed (pure) | R13 |
 | `OccurrencePicker` | `ShortestSentencePicker` (in `application/selection/picker.py`) | not needed (pure) | [0032](../decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md) |
@@ -107,9 +111,12 @@ Ports are `typing.Protocol`s, so adapters and fakes need no inheritance and mypy
 - `LLMProvider` has a `prompt_version` property next to `name` and `model`, so the cache key changes with the prompt ([0035](../decisions/0035-version-the-card-prompt-as-a-template-with-a-pinned-hash.md)). Decorators pass all three through.
 - `CandidateRepository.pending_chunks()` returns every chunk key that is not done locally, with its occurrence count and missing note kinds, ordered by key. It is the input of selection ([Data model](../data/data-model.md#pending-chunks)).
 - `OccurrencePicker` was added in M4.
+- `SourceRepository.find_id` takes the reference or the hash alone, `SourceRepository.replace` overwrites a stored source in place, and `CandidateRepository.remove` deletes a source's occurrences, for `add --force` and `reextract` ([0042](../decisions/0042-recognise-known-sources-before-fetching-and-refresh-them-in-place.md)).
 - `AnkiGateway.existing_keys` reads notes of the tool's note type anywhere in the collection, not only in the deck ([0039](../decisions/0039-read-existing-keys-per-note-type-across-the-collection.md)).
 
 Some v1 strategies live in `application/`, not `adapters/`, because they do no I/O: the ranker and the picker are pure, and `AlreadyInDeckFilter` reaches Anki only through the `AnkiGateway` port, so its tests use `FakeAnkiGateway`. `ChunkSelector` in `application/selection/selector.py` runs pending chunks through filter, ranker, cap and picker.
+
+The ingest use cases (`AddSources`, `ShowStatus`, `Reextract`) are described in [Ingest](ingest.md). `AddSources.run` and `Reextract.run` yield one outcome per source after its unit of work commits, so the CLI prints progress as it happens ([0045](../decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md)).
 
 `with uow:` is one transaction: it commits when the block ends normally and rolls back when it raises. Tables and the chunk status are in [Data model](../data/data-model.md).
 
@@ -124,7 +131,7 @@ Some v1 strategies live in `application/`, not `adapters/`, because they do no I
 | Repository and unit of work | SQLite storage | One transaction per source in `add` and per chunk in `sync` gives the partial-failure rules of [0014](../decisions/0014-keep-progress-when-a-run-fails-partway.md). |
 | Builder | `NoteBuilder` | One `CardContent` becomes two `NoteDraft`s with fields and tags in a single tested place. |
 | Registry | Name to plug-in maps in `bootstrap`, starting with `extractor_registry()` | A plain dict. No entry points until third-party plug-ins exist. |
-| Composition root | `bootstrap.py` | Constructor injection, no globals, no DI framework. Tests pass overrides. |
+| Composition root | `bootstrap.py` | Constructor injection, no globals, no DI framework. Tests pass `Overrides` to `create_app` ([0045](../decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md)). |
 | Value object | `ChunkKey`, `RunId` | Validated once at creation, immutable, safe to use as dict keys. |
 
 Not used on purpose: abstract base class hierarchies (Protocols suffice), a service locator, async (one user and sequential calls), a generic `utils` module.
@@ -134,11 +141,11 @@ Not used on purpose: abstract base class hierarchies (Protocols suffice), a serv
 | Type | Meaning | Examples | `sync` reaction |
 |---|---|---|---|
 | `FatalError` | Every further step would fail | `ConfigError`, `MissingCredentialsError`, `DatabaseError`, `NlpModelMissingError`, `AnkiUnavailableError`, `NoteTypeMismatchError`, `LLMAccessError`, `AnkiActionError` | Stop at once, print summary, exit 2 |
-| `ItemError` | Only this source or chunk failed | `DuplicateSourceError`, `GenerationError`, `PushError`, `LLMRequestError`; a source fetch error arrives with M3 | Record the error, continue, exit 1 at the end |
+| `ItemError` | Only this source or chunk failed | `SourceFetchError`, `DuplicateSourceError`, `GenerationError`, `PushError`, `LLMRequestError` | Record the error, continue, exit 1 at the end |
 
 Shared errors live in `domain/errors.py`. An adapter that needs its own error subclasses a domain error in its own `errors.py` ([0026](../decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md)): `LLMAccessError` (the provider refused the key, account or model) and `LLMRequestError` (one call failed after retries) in `adapters/llm/` ([0037](../decisions/0037-call-claude-with-a-json-schema-and-split-errors-into-fatal-and-item.md)), and `AnkiActionError` (an AnkiConnect action failed or answered in the wrong shape) in `adapters/anki/`, which the gateway narrows to a `PushError` when only one note is affected ([0040](../decisions/0040-add-notes-one-call-each-and-split-ankiconnect-errors.md)).
 
-Adapters catch their library's exceptions and re-raise one of these with `raise … from exc`. Only the use-case loop catches `ItemError`; nothing catches `FatalError` except the CLI, which turns it into a message and an exit code.
+Adapters catch their library's exceptions and re-raise one of these with `raise … from exc`. Only the use-case loop catches `ItemError`; nothing catches `FatalError` except the CLI, which turns it into a message and an exit code. `SourceFetchError` covers every source that cannot be read: no adapter for the reference, a missing or non-UTF-8 file, a page robots.txt forbids, a refused or paywalled page, a timeout, or too little text.
 
 ## Data flow
 

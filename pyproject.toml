@@ -11,6 +11,7 @@ dependencies = [
     "platformdirs>=4.3",
     "pydantic-settings>=2.6",
     "spacy>=3.8,<3.9",
+    "trafilatura>=2.4.0",
     "typer>=0.15",
 ]
 
@@ -130,10 +131,11 @@ layers = [
 name = "Domain, ports and application do no I/O"
 type = "forbidden"
 source_modules = ["learn_german.domain", "learn_german.ports", "learn_german.application"]
-# Extend as later milestones add I/O libraries (trafilatura in M3, ...).
+# Extend as later milestones add I/O libraries.
 forbidden_modules = [
     "anthropic",
     "httpx2",
+    "trafilatura",
     "spacy",
     "typer",
     "click",

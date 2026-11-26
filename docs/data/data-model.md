@@ -33,7 +33,7 @@ One row per processed source (R5, R6).
 | `content_hash` | TEXT | SHA-256 of the normalised text, **unique** |
 | `text` | TEXT | The full text, so `reextract` never fetches again (0017) |
 
-Unique `ref` and unique `content_hash` together implement R6: a source is known by its address or by its text. Adding a duplicate raises `DuplicateSourceError`.
+Unique `ref` and unique `content_hash` together implement R6: a source is known by its address or by its text. Adding a duplicate raises `DuplicateSourceError`. `add --force` overwrites a row in place with `SourceRepository.replace`, keeping its `id` and so its candidates ([0042](../decisions/0042-recognise-known-sources-before-fetching-and-refresh-them-in-place.md)). `ref` is the URL as given or a file's absolute path; `text` is normalised and `content_hash` is its SHA-256 ([0044](../decisions/0044-normalise-source-text-by-paragraph-before-hashing.md)).
 
 ### `candidates`
 
@@ -48,7 +48,7 @@ One row per occurrence of a chunk in a source sentence (R10). Many rows can shar
 | `sentence` | TEXT | The source sentence |
 | `context` | TEXT | The sentence with one sentence either side |
 
-`(source_id, chunk_key, sentence)` is unique. Adding the same occurrence again updates its kind and context instead of duplicating it. Occurrence counts for ranking (R13) are `COUNT(*)` grouped by `chunk_key`, so the same sentence in two sources counts twice.
+`(source_id, chunk_key, sentence)` is unique. Adding the same occurrence again updates its kind and context instead of duplicating it, and keeps its `id`. `reextract` and `add --force` delete occurrences they no longer find with `CandidateRepository.remove`, unless the chunk has notes ([0017](../decisions/0017-split-the-cli-into-add-and-sync.md)). Occurrence counts for ranking (R13) are `COUNT(*)` grouped by `chunk_key`, so the same sentence in two sources counts twice.
 
 ### `pushed_notes`
 

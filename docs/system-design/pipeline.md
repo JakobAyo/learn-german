@@ -32,9 +32,10 @@ Everything left of SQLite is free and local apart from fetching. Everything righ
 | Ingest | Source adapter (R5): news URL, local file | URL or path | Source row: reference, title, fetch time, content hash, text |
 | Extract | Chunk extractor (R9): NVV in v1 | Source text | Candidate rows: chunk key, kind, sentence, context window, source. Status is tracked per chunk key, not per row ([0025](../decisions/0025-track-note-progress-per-chunk-key.md)) |
 
-- A source already in the database (same URL or content hash) is skipped unless `--force` is given (R6).
+- A source already in the database is skipped unless `--force` is given (R6): a known URL before it is fetched, a known text after. `--force` fetches again and refreshes the stored source in place, updating its candidates by the `reextract` rules ([0042](../decisions/0042-recognise-known-sources-before-fetching-and-refresh-them-in-place.md)).
 - A source that fails (blocked, paywalled, too little text) is reported and skipped; the others continue ([0013](../decisions/0013-fetch-articles-politely-without-bypassing-paywalls.md), [0014](../decisions/0014-keep-progress-when-a-run-fails-partway.md)).
-- Output per source: number of chunks found and how many have keys not yet seen in the database.
+- Each source is extracted outside any transaction and stored in its own unit of work.
+- Output per source: number of chunks found and how many have keys not yet seen in the database. Details, including fetching and exit codes, are in [Ingest](ingest.md).
 
 ## `sync`: select, generate, push
 
@@ -58,13 +59,14 @@ A `sync` is one run: it gets a run ID ([0016](../decisions/0016-use-standard-pyt
 
 ## `reextract`
 
-Reruns the extractors over stored source text after the extractor or the light-verb list changes. Candidates found again keep their status, new ones are added as pending, pending ones no longer found are removed, and ones that already have notes are kept.
+Reruns the extractors over stored source text after the extractor or the light-verb list changes. Candidates found again keep their status, new ones are added as pending, pending ones no longer found are removed, and ones that already have notes are kept. "Has notes" means the chunk key has a row in `pushed_notes` ([0025](../decisions/0025-track-note-progress-per-chunk-key.md)). The rules live in `application/extraction.py` and are shared with `add --force`.
 
 ## `status`
 
-Lists pending chunks from `pending_chunks()`, ordered by the same `OccurrenceRanker` as `sync`, without asking Anki. A chunk Anki already has may show as pending there; `sync` skips it.
+Lists the five most recent sources, the number of pending and partial chunks, and the top pending chunks (`--top`, default 10) from `pending_chunks()`, ordered by the same `OccurrenceRanker` as `sync`, without asking Anki. A chunk Anki already has may show as pending there; `sync` skips it.
 
 ## Related
 
+- [Ingest](ingest.md)
 - [Requirements](../product/requirements.md)
 - [Note types](../learning-design/note-types.md)
