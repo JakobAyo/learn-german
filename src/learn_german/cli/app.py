@@ -13,10 +13,12 @@ import typer
 
 from learn_german.application.add_sources import AddSummary
 from learn_german.application.status import DEFAULT_TOP
-from learn_german.bootstrap import IngestServices, Overrides, ingest_services
+from learn_german.application.sync import SyncRun
+from learn_german.bootstrap import IngestServices, Overrides, ingest_services, sync_service
 from learn_german.cli import presenters
 from learn_german.config import load_settings
 from learn_german.domain.errors import FatalError
+from learn_german.domain.models import RunSummary
 
 EXIT_ITEM_FAILED: Final = 1
 EXIT_FATAL: Final = 2
@@ -115,7 +117,58 @@ def create_app(overrides: Overrides | None = None) -> typer.Typer:
                 outcomes.append(outcome)
         typer.echo(presenters.reextract_summary(outcomes))
 
+    @app.command()
+    def sync(
+        cap: Annotated[
+            int | None,
+            typer.Option(
+                "--cap",
+                min=0,
+                help="Most chunks to generate cards for, two notes each. Default: the cap "
+                "setting, else 10.",
+                show_default=False,
+            ),
+        ] = None,
+        dry_run: Annotated[
+            bool,
+            typer.Option(
+                "--dry-run",
+                help="Generate and print the notes without adding them to Anki. The generated "
+                "content is cached, so a following sync does not pay for it again.",
+            ),
+        ] = False,
+    ) -> None:
+        """Generate cards for the top pending chunks and add them to Anki."""
+        try:
+            settings = load_settings({"cap": cap})
+            with sync_service(settings, overrides) as service:
+                run = service.start(cap=settings.cap, dry_run=dry_run)
+                summary = _sync_chunks(run)
+        except FatalError as exc:
+            typer.echo(presenters.fatal_error(exc), err=True)
+            raise typer.Exit(EXIT_FATAL) from exc
+        if summary.has_failures:
+            raise typer.Exit(EXIT_ITEM_FAILED)
+
     return app
+
+
+def _sync_chunks(run: SyncRun) -> RunSummary:
+    """Print the run as it goes and return its summary. A fatal error still prints the
+    summary of what was done, then propagates."""
+    if run.anki_unavailable is not None:
+        typer.echo(presenters.anki_unavailable_warning(run.anki_unavailable), err=True)
+    typer.echo(presenters.sync_start(run))
+    try:
+        for outcome in run.chunks():
+            typer.echo(presenters.chunk_outcome(outcome, dry_run=run.dry_run))
+    except FatalError:
+        typer.echo(presenters.run_summary(run.summary(), stopped=True))
+        raise
+    summary = run.summary()
+    if run.selected:
+        typer.echo(presenters.run_summary(summary))
+    return summary
 
 
 app = create_app()
