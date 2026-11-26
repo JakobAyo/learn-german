@@ -70,6 +70,9 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Version the card prompt as a template file with a pinned hash](decisions/0035-version-the-card-prompt-as-a-template-with-a-pinned-hash.md) — The card prompt is a template file beside the LLM adapters with a pure renderer; PROMPT_VERSION is in every cache key, and a test pins its hash.
 - [Check card content cheaply, then cache it per request in its own transaction](decisions/0036-check-card-content-then-cache-it-in-its-own-transaction.md) — CheckedProvider turns clearly wrong content into a GenerationError; CachingProvider wraps it, keyed by a request hash, in its own transactions.
 - [Call Claude with a JSON-schema output format and split API errors into fatal and item](decisions/0037-call-claude-with-a-json-schema-and-split-errors-into-fatal-and-item.md) — One Messages call with a JSON-schema output at medium effort, no refusal fallback; rejected access is fatal, failures after retries are item errors.
+- [Create missing note types and check only their fields](decisions/0038-create-missing-note-types-and-check-only-their-fields.md) — ensure_setup creates the deck and missing note types from package template files, fails if an existing type's fields differ, and never edits an existing type.
+- [Read existing keys per note type across the whole collection](decisions/0039-read-existing-keys-per-note-type-across-the-collection.md) — existing_keys counts every note of the tool's note type wherever it is, not only in the deck, so it agrees with Anki's own duplicate check on add.
+- [Add notes one call each, escape field values, and split AnkiConnect errors into fatal and item](decisions/0040-add-notes-one-call-each-and-split-ankiconnect-errors.md) — One addNote call per note so a rejection is attributable, field values HTML-escaped, unreachable or failing setup is fatal, a rejected note is a PushError.
 
 ### [development/](development/CLAUDE.md)
 
@@ -86,6 +89,7 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 
 External systems: Anki, translation, audio and any LLM; how each is called and fails.
 
+- [AnkiConnect](integrations/ankiconnect.md) — How the Anki adapter talks to the running Anki app through AnkiConnect: setup, settings, actions used, failure modes, tests and the manual smoke test.
 - [Claude API](integrations/claude-api.md) — How AnthropicProvider calls the Claude API: settings, request, retries, how each failure is reported, cost, mocked tests and the eval script.
 
 ### [learning-design/](learning-design/CLAUDE.md)

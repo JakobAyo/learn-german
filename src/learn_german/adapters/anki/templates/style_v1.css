@@ -1,0 +1,38 @@
+.card {
+  font-family: system-ui, sans-serif;
+  font-size: 22px;
+  line-height: 1.4;
+  text-align: left;
+  max-width: 40em;
+  margin: 0 auto;
+  padding: 0 1em;
+  color: #1f2328;
+  background-color: #ffffff;
+}
+
+.card.nightMode {
+  color: #e6edf3;
+  background-color: #1f2328;
+}
+
+.lg-instruction {
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin: 0.5em 0;
+}
+
+.lg-prompt,
+.lg-answer,
+.lg-use {
+  margin: 0.5em 0;
+}
+
+.lg-chunk {
+  font-weight: bold;
+}
+
+.lg-meaning {
+  font-size: 0.85em;
+  font-style: italic;
+  margin: 0.5em 0;
+}
