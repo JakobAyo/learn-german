@@ -107,7 +107,8 @@ class AnkiGateway(Protocol):
         ...
 
     def existing_keys(self, note_kind: NoteKind) -> frozenset[ChunkKey]:
-        """Chunk keys that already have a note of this kind in the deck."""
+        """Chunk keys that already have a note of this kind's note type anywhere in the
+        collection, not only in the deck (0039)."""
         ...
 
     def add_notes(self, drafts: Sequence[NoteDraft]) -> None:
