@@ -47,6 +47,11 @@ class DuplicateSourceError(ItemError):
     """A source with the same reference or content hash is already stored (R6)."""
 
 
+class SourceFetchError(ItemError):
+    """One source cannot be read or fetched: missing file, bad encoding, blocked or paywalled
+    page, too little text, or no adapter for the reference (R4, 0013)."""
+
+
 class GenerationError(ItemError):
     """The LLM's output for one chunk is unusable: invalid JSON, schema or sanity check."""
 

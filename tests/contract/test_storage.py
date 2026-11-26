@@ -2,6 +2,7 @@
 
 import sqlite3
 from collections.abc import Iterator
+from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 
@@ -128,6 +129,51 @@ def test_sources_find_id_by_ref_or_hash(
     assert result == (source_id if found else None)
 
 
+@pytest.mark.parametrize(
+    ("ref", "content_hash", "found"),
+    [
+        pytest.param("https://example.org/artikel", None, True, id="ref-only"),
+        pytest.param(None, "h1", True, id="hash-only"),
+        pytest.param("https://example.org/neu", None, False, id="unknown-ref-only"),
+        pytest.param(None, None, False, id="neither"),
+    ],
+)
+def test_sources_find_id_with_one_argument(
+    uow: UnitOfWork, ref: str | None, content_hash: str | None, found: bool
+) -> None:
+    source_id = add_source(uow)
+
+    with uow:
+        result = uow.sources.find_id(ref=ref, content_hash=content_hash)
+
+    assert result == (source_id if found else None)
+
+
+def test_sources_replace_keeps_id_and_candidates(uow: UnitOfWork) -> None:
+    source_id = add_source(uow)
+    with uow:
+        uow.candidates.add_all(source_id, [make_candidate()])
+    fresh = replace(make_source(content_hash="h2"), title="Neu", text="Ein neuer Text.")
+
+    with uow:
+        uow.sources.replace(source_id, fresh)
+
+    with uow:
+        assert uow.sources.get(source_id) == fresh
+        assert uow.candidates.for_source(source_id) == [make_candidate()]
+
+
+def test_sources_replace_refuses_another_sources_hash(uow: UnitOfWork) -> None:
+    first = add_source(uow)
+    add_source(uow, make_source("https://example.org/b", "h2"))
+
+    with pytest.raises(DuplicateSourceError, match="another stored source"), uow:
+        uow.sources.replace(first, make_source(content_hash="h2"))
+
+    with uow:
+        assert uow.sources.get(first) == make_source()
+
+
 def test_sources_all_lists_oldest_first(uow: UnitOfWork) -> None:
     first = add_source(uow)
     second = add_source(uow, make_source("https://example.org/b", "h2"))
@@ -151,6 +197,24 @@ def test_candidates_round_trip_in_insertion_order(uow: UnitOfWork) -> None:
 
     with uow:
         assert uow.candidates.for_source(source_id) == candidates
+
+
+def test_candidates_remove_deletes_only_matching_occurrences_of_the_source(
+    uow: UnitOfWork,
+) -> None:
+    first = add_source(uow)
+    second = add_source(uow, make_source("https://example.org/b", "h2"))
+    other = make_candidate(OTHER_KEY, "Sie stellte Geld zur Verfügung.")
+    with uow:
+        uow.candidates.add_all(first, [make_candidate(), other])
+        uow.candidates.add_all(second, [make_candidate()])
+
+    with uow:
+        uow.candidates.remove(first, [make_candidate(context="any context")])
+
+    with uow:
+        assert uow.candidates.for_source(first) == [other]
+        assert uow.candidates.for_source(second) == [make_candidate()]
 
 
 def test_candidates_upsert_same_occurrence_once(uow: UnitOfWork) -> None:

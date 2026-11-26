@@ -144,8 +144,20 @@ class SourceRepository(Protocol):
 
     def get(self, source_id: SourceId) -> Source | None: ...
 
-    def find_id(self, *, ref: str, content_hash: str) -> SourceId | None:
-        """The stored source with this ref or this content hash, if any."""
+    def find_id(
+        self, *, ref: str | None = None, content_hash: str | None = None
+    ) -> SourceId | None:
+        """The oldest stored source with this ref or this content hash, if any.
+
+        Either argument may be left out, so `add` can look a URL up before fetching it.
+        """
+        ...
+
+    def replace(self, source_id: SourceId, source: Source) -> None:
+        """Overwrite a stored source with a fresh copy, keeping its ID and candidates (R6).
+
+        Raises `DuplicateSourceError` if another stored source has the new ref or hash.
+        """
         ...
 
     def all(self) -> list[tuple[SourceId, Source]]:
@@ -159,6 +171,10 @@ class CandidateRepository(Protocol):
     def add_all(self, source_id: SourceId, candidates: Iterable[Candidate]) -> None:
         """Insert the candidates. The same key and sentence in the same source is stored once;
         adding it again updates its kind and context."""
+        ...
+
+    def remove(self, source_id: SourceId, candidates: Iterable[Candidate]) -> None:
+        """Delete the source's occurrences with the same key and sentence as these (0017)."""
         ...
 
     def for_source(self, source_id: SourceId) -> list[Candidate]:
