@@ -1,6 +1,7 @@
-# `make check` runs exactly what CI runs (0019). Keep the two in step.
+# `make check` runs what CI runs (0019), except the nlp job: run `make test-nlp` for it.
+# Keep the two in step.
 
-.PHONY: check lint types test docs fmt
+.PHONY: check lint types test test-nlp docs fmt
 
 check: lint types test docs
 
@@ -15,6 +16,10 @@ types:
 
 test:
 	uv run --locked pytest -m "not nlp" --cov --cov-report=term-missing
+
+# Needs the spaCy model extra (0027), so `check` leaves it out; CI runs it as the nlp job.
+test-nlp:
+	uv run --locked --extra model pytest -m nlp
 
 docs:
 	uv run --locked python tools/docs/validate_docs.py --docs-root docs

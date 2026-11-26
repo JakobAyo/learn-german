@@ -61,6 +61,9 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Run M2, M4, M5 and M6 as parallel tracks with file ownership](decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md) — Four agents build M2, M4, M5 and M6 at once in worktrees; each track owns fixed files, shared contracts are frozen, and tracks merge into develop.
 - [Settle runtime dependencies up front, httpx2 and the spaCy model extra](decisions/0027-settle-shared-dependencies-before-parallel-tracks.md) — anthropic, httpx2 and spaCy 3.8 are added before the tracks; httpx2 replaces httpx as the SDK uses it; the spaCy model is an optional extra.
 - [Let the LLM supply the citation form of a chunk](decisions/0028-let-the-llm-supply-the-citation-form.md) — The Chunk field comes from the LLM as CardContent.citation_form, not the extractor, because the citation article is not in the parse.
+- [Match NVVs in ranked tiers on the dependency parse, without a noun lexicon](decisions/0029-match-nvvs-in-ranked-tiers-without-a-noun-lexicon.md) — A light verb's NVV is the first non-empty tier of cvc phrase or variant, bare object, last bare PP, other object; no list of NVV nouns is used.
+- [Keep a verb's own separable prefix in the key, and list light verbs by full infinitive](decisions/0030-keep-a-verbs-own-separable-prefix-in-the-key.md) — The verb in a chunk key includes its own separated prefix (nahm Kontakt auf → kontakt|aufnehmen); the light-verb list holds full infinitives such as aufnehmen.
+- [Guard extraction quality with a golden-corpus baseline](decisions/0031-guard-extraction-with-a-golden-corpus-baseline.md) — Hand-written sentences with expected keys are scored for micro-averaged precision and recall; the nlp test fails below the baseline stored next to the corpus.
 
 ### [development/](development/CLAUDE.md)
 
@@ -104,6 +107,7 @@ Experiments, evaluations and summaries of outside advice that inform decisions.
 Extraction pipeline: ingest, NLP processing, filtering and ranking, card generation, export.
 
 - [Code architecture](system-design/code-architecture.md) `[draft]` — Ports-and-adapters layout of the Python package, the dependency rule, every port with its v1 adapter and fake, and the patterns used where.
+- [NVV extraction](system-design/nvv-extraction.md) — How the NVV extractor parses with spaCy, matches light verbs in ranked tiers, builds 0011 keys and context, and how its quality is guarded.
 - [Pipeline](system-design/pipeline.md) — Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 
 <!-- docs-index:end -->

@@ -2,7 +2,7 @@
 title: CI and releases
 summary: CI jobs that gate main, repository settings, the Conventional Commits PR-title rule, and how release-please produces versions, tags and CHANGELOG.md.
 status: draft
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # CI and releases
@@ -34,7 +34,7 @@ git checkout develop && git pull && git merge origin/main && git push
 | `lint` | `ruff check`, `ruff format --check`, `uv lock --check` | Bug-prone patterns, unused code, unformatted code, `pyproject.toml` changed without the lock |
 | `types` | `mypy --strict src tests`, `lint-imports` | Type errors; a layer importing what it must not ([Code architecture](../system-design/code-architecture.md)) |
 | `test` | `pytest -m "not nlp" --cov` | Logic regressions, coverage below 85 % |
-| `nlp` | `pytest -m nlp` with the spaCy model cached | Chunk key and extraction regressions (added in M2; not in `ci.yml` yet) |
+| `nlp` | `uv sync --extra model`, then `make test-nlp`; the model wheel is kept in the job's own uv cache entry (`cache-suffix: nlp`) | 0011 key regressions and golden-corpus precision or recall below the baseline ([NVV extraction](../system-design/nvv-extraction.md)) |
 | `docs` | `python tools/docs/validate_docs.py --docs-root docs` | Broken frontmatter, names or a stale docs index |
 
 Plus `pr-title.yml`: the PR title must be a Conventional Commit, because it becomes the squash commit that release-please reads.
