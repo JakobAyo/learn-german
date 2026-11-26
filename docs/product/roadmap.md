@@ -27,7 +27,7 @@ Splits v1 (as fixed in [Requirements](requirements.md) and decisions 0002 to 001
 | M0 | Foundation and CI/CD | Empty package, all quality gates and the release pipeline proven | 0.1.0 (done) |
 | M1 | Domain, ports, storage, config | Core types, plug-in interfaces, SQLite with migrations, settings | 0.2.0 (done) |
 | M2 | NVV extractor | Text in, correct chunk keys out, guarded by a golden corpus | implemented, not yet released |
-| M3 | Ingest, `add`, `status`, `reextract` | **First usable tool**: collect sources and see pending chunks | 0.x |
+| M3 | Ingest, `add`, `status`, `reextract` | **First usable tool**: collect sources and see pending chunks | implemented, not yet released |
 | M4 | Selection | Filter chain, occurrence ranker, cap, occurrence picker | implemented, not yet released |
 | M5 | Generation | LLM port, Claude adapter, versioned prompt, cache decorator | implemented, not yet released |
 | M6 | Anki export | AnkiConnect gateway, v1 note types, note builder, tags | implemented, not yet released |
