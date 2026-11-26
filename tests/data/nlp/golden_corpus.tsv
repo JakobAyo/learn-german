@@ -1,0 +1,75 @@
+# Golden corpus for the NVV extractor (0031). Hand-written synthetic sentences only (0002).
+# Columns: sentence, expected chunk keys separated by spaces ("-" for none).
+# Expected keys say what a careful human would extract, not what the extractor does today,
+# so known misses and false positives stay visible in the precision and recall.
+Die Stadt stellt den Bürgern kostenlose Parkplätze zur Verfügung.	verfügung|zu|stellen
+Für Fragen steht unser Team jederzeit zur Verfügung.	verfügung|zu|stehen
+Viele Experten stellen die Wirksamkeit des Programms in Frage.	frage|in|stellen
+Der Journalist hat dem Minister eine unangenehme Frage gestellt.	frage|stellen
+Für die meisten Kunden spielt der Preis keine Rolle.	rolle|spielen
+Bei Glatteis sollte man sich auf der Straße in Acht nehmen.	acht|in|sich|nehmen
+Nach langer Diskussion traf der Rat eine Entscheidung.	entscheidung|treffen
+Die Opposition stellt die Zahlen der Regierung infrage.	frage|in|stellen
+Das neue Gesetz tritt am ersten Januar in Kraft.	kraft|in|treten
+Bei dem Sturm kamen zwei Menschen ums Leben.	leben|um|kommen
+In ihrer Rede brachte die Präsidentin ihre Dankbarkeit zum Ausdruck.	ausdruck|zu|bringen
+Wir sollten auch diese Möglichkeit in Betracht ziehen.	betracht|in|ziehen
+Die steigenden Preise setzen viele Familien unter Druck.	druck|unter|setzen
+Der Vorschlag der Kommission stieß auf heftige Kritik.	kritik|auf|stoßen
+Die Behörde ergriff sofort Maßnahmen gegen die Verschmutzung.	maßnahme|ergreifen
+Der Bürgermeister hielt zur Eröffnung eine kurze Rede.	rede|halten
+Die Ministerin führte lange Gespräche mit den Gewerkschaften.	gespräch|führen
+Die Freiwilligen leisteten den Opfern schnelle Hilfe.	hilfe|leisten
+Der Verband übte scharfe Kritik an dem Entwurf.	kritik|üben
+Unsere Firma legt großen Wert auf Qualität.	wert|legen
+Nach vielen Jahren nahm er Abschied von seiner Heimat.	abschied|nehmen
+Autofahrer müssen auf Radfahrer Rücksicht nehmen.	rücksicht|nehmen
+Die Schülerin gab sich bei der Prüfung große Mühe.	mühe|sich|geben
+Die Polizei nahm sofort Kontakt mit der Familie auf.	kontakt|aufnehmen
+Die Entscheidung wurde erst am späten Abend getroffen.	entscheidung|treffen
+Ich weiß nicht, ob der Vorstand schon eine Entscheidung getroffen hat.	entscheidung|treffen
+Das heikle Thema kam in der Sitzung nicht zur Sprache.	sprache|zu|kommen
+Durch den Unfall geriet der Fahrer in große Gefahr.	gefahr|in|geraten
+Die Liste erhebt keinen Anspruch auf Vollständigkeit.	anspruch|erheben
+Das Amt erteilte dem Unternehmen schließlich die Genehmigung.	genehmigung|erteilen
+Nach langem Zögern fasste sie einen Entschluss.	entschluss|fassen
+Der neue Plan fand bei den Bürgern breite Zustimmung.	zustimmung|finden
+Die Bauarbeiten an der Brücke gehen langsam zu Ende.	ende|zu|gehen
+Die Firma bringt im Herbst ein neues Modell auf den Markt.	markt|auf|bringen
+Man muss bei diesem Projekt gewisse Risiken in Kauf nehmen.	kauf|in|nehmen
+Die Partei zieht Konsequenzen aus dem Skandal.	konsequenz|ziehen
+Die neue Regel kommt ab Montag zur Anwendung.	anwendung|zu|kommen
+Die Frage wird in der Debatte immer wieder gestellt.	frage|stellen
+Der Lehrer stellte eine schwierige Frage, und niemand gab eine Antwort.	frage|stellen antwort|geben
+Der Vertrag kam nach langen Verhandlungen doch noch zustande.	stand|zu|kommen
+Diese Annahme liegt dem ganzen Bericht zugrunde.	grund|zu|liegen
+Die Bürger setzten den Bürgermeister mit Protesten unter Druck, bis er eine Entscheidung traf.	druck|unter|setzen entscheidung|treffen
+Sie stellte die Vase vorsichtig auf den Tisch.	-
+Er nahm das Buch aus dem Regal.	-
+Die Kinder gingen am Morgen in die Schule.	-
+Die alte Vase stand im Garten neben dem Brunnen.	-
+Er kam gestern sehr spät nach Hause.	-
+Es gibt in der Stadt kaum freie Wohnungen.	-
+Die Polizei nahm den Verdächtigen am Bahnhof fest.	-
+Er stellte fest, dass die Tür offen war.	-
+Die Firma hat die Produktion im Sommer eingestellt.	-
+Wir treffen uns morgen mit Freunden im Café.	-
+Der Zug kommt um acht Uhr in Berlin an.	-
+Meine Schwester spielt jeden Abend Klavier.	-
+Der Trainer gab dem Spieler den Ball.	-
+In dem Artikel geht es um die Zukunft der Stadt.	-
+Sie haben das Problem schnell gelöst.	-
+Der Hund lag den ganzen Tag in der Sonne.	-
+# Added after the matcher rules were tuned on the lines above, and not tuned against.
+Die Regierung hat neue Regeln für Mieter in Kraft gesetzt.	kraft|in|setzen
+Nach dem Urteil nahm der Minister zu den Vorwürfen Stellung.	stellung|nehmen
+Die Stadt muss endlich eine Lösung für das Verkehrsproblem finden.	lösung|finden
+Der Verband nahm im Gesetzgebungsverfahren Einfluss auf die Entscheidung.	einfluss|nehmen
+Die Polizei brachte die Situation schnell unter Kontrolle.	kontrolle|unter|bringen
+Seit Wochen führen die Parteien Verhandlungen über einen Kompromiss.	verhandlung|führen
+Die Ärztin gab dem Patienten einen wichtigen Rat.	rat|geben
+Die Firma geriet durch die Krise in Schwierigkeiten.	schwierigkeit|in|geraten
+Die Kinder spielten im Park Fußball.	-
+Der Chef stellte die neuen Kollegen dem Team vor.	-
+Das Museum bleibt am Montag geschlossen.	-
+Er hat seine Schlüssel auf dem Tisch liegen lassen.	-
