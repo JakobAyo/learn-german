@@ -122,7 +122,7 @@ Run before a release that touches `adapters/anki/` or the note types, against a 
 3. In Anki, check:
    - Tools, Manage Note Types lists `learn-german-transformation-v1` (fields `ChunkKey, Chunk, Meaning, Answer, Prompt`) with one card type, and no `learn-german-translation-v1`.
    - The deck `learn-german::chunks` exists and Browse shows exactly one note, tagged `learn-german`, `provider::anthropic`, `model::claude-opus-5-5` and `run::run-20261126-1200`.
-   - Preview the card. Front: "Rewrite in nominal style, using an NVV:" and the verbal sentence; back: front, a line, the answer, the chunk in bold, the meaning in italics. `ChunkKey` is on neither side; the meaning shows `& <festlegen>` literally. Check light and night mode.
+   - Preview the card. Front: "Rewrite in verbal style, without the NVV:" and the sentence with the NVV; back: front, a line, the verbal sentence, the chunk in bold, the meaning in italics. `ChunkKey` is on neither side; the meaning shows `& <festlegen>` literally. Check light and night mode.
 4. Run `gateway.ensure_setup()` again and confirm in Anki that the deck and note types are unchanged.
 5. Rename a field of the note type in Anki, run `gateway.ensure_setup()`: it raises `NoteTypeMismatchError` naming both field lists. Rename it back.
 6. Close Anki and run `gateway.ensure_setup()`: it raises `AnkiUnavailableError` saying to start Anki.

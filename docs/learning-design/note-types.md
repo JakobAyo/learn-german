@@ -48,8 +48,10 @@ Extra field:
 |---|---|
 | `Prompt` | Die Regierung hat entschieden, die Steuer zu senken. |
 
-- **Front:** "Rewrite in nominal style, using an NVV:" followed by `Prompt`.
-- **Back:** the front, then `Answer`, then `Chunk` and `Meaning`.
+- **Front:** "Rewrite in verbal style, without the NVV:" followed by `Answer`, the sentence with the NVV.
+- **Back:** the front, then `Prompt`, the verbal-style sentence, then `Chunk` and `Meaning`.
+
+The direction was inverted by [0050](../decisions/0050-show-the-nvv-sentence-on-the-front-of-the-transformation-card.md). The field names still describe the original direction (verbal prompt, nominal answer); only the templates swap them, so the fields and existing notes are unchanged. A collection created before 0050 keeps the old templates until they are replaced once in Anki.
 
 When the NVV has no direct verb, `Prompt` uses the closest plain paraphrase (*wirksam werden* for *in Kraft treten*).
 

@@ -9,6 +9,8 @@ updated: 2026-11-27
 
 > **Amended by [0049](0049-drop-the-translation-card-and-the-hint-language.md)** (2026-11-27). Each chunk now gets one note, the transformation note; there is no translation note. The card still drills the chunk on a shortened sentence, and the cap still counts chunks.
 
+> **Amended by [0050](0050-show-the-nvv-sentence-on-the-front-of-the-transformation-card.md)** (2026-11-27). The transformation card is inverted: the front shows the shortened sentence with the NVV, and the learner rewrites it in verbal style.
+
 ## Context
 
 [0006](0006-use-transformation-and-translation-prompt-cards.md) chose two card types but left their content open. Most sentences that contain an NVV have no participial attribute to rewrite. Many NVVs have no direct verb equivalent (*in Kraft treten*). News sentences are often longer than 30 words. [0009](0009-deduplicate-by-chunk-key-and-cap-new-notes-per-run.md) capped "new notes" without saying whether one chunk means one note or two.

@@ -43,7 +43,7 @@ States what the extractor must do and the constraints it must respect, so that t
 ## Card generation
 
 - **R15. Card types.** v1 produces one production card type, one note per chunk; chunk cloze is not built. It is built on the source sentence shortened by the LLM to the clause around the chunk. ([0006](../decisions/0006-use-transformation-and-translation-prompt-cards.md), [0012](../decisions/0012-make-both-cards-practise-the-chunk.md), [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md))
-  - **Transformation:** given the sentence rewritten in verbal style, produce the nominal-style sentence with the NVV. Where no direct verb exists, the front uses the closest paraphrase. Syntax rewrites (participial attribute, relative clause) are not in v1.
+  - **Transformation:** given the sentence with the NVV, rewrite it in verbal style without the NVV ([0050](../decisions/0050-show-the-nvv-sentence-on-the-front-of-the-transformation-card.md) inverted the original direction). Where no direct verb exists, the model answer uses the closest paraphrase. Syntax rewrites (participial attribute, relative clause) are not in v1.
   - **Translation prompt:** dropped by [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md). It doubled the cards per chunk without training anything the transformation card does not.
   - The back shows a one-line German meaning of the chunk. Fields and layout are in [Note types](../learning-design/note-types.md).
 - **R16. Required hint language.** Dropped by [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md): only the translation prompt used a hint language, so there is no such setting. ([0015](../decisions/0015-set-v1-run-defaults.md))

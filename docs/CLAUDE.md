@@ -82,6 +82,7 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Push a chunk's notes one call each and save progress per chunk](decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md) — sync adds each note in its own add_notes call and saves pushed notes and errors per chunk; a fatal error keeps what was pushed and prints the summary so far.
 - [Log with stdlib logging behind a global --verbose flag](decisions/0048-log-with-stdlib-logging-behind-a-global-verbose-flag.md) — A global --verbose/-v option turns on DEBUG for the learn_german loggers only, on stderr; third-party loggers stay at WARNING and a filter masks API keys.
 - [Drop the translation card and the hint language](decisions/0049-drop-the-translation-card-and-the-hint-language.md) — Each chunk now gets one transformation note; the translation-prompt note type, the translation field and the hint_language setting are removed.
+- [Show the NVV sentence on the front of the transformation card](decisions/0050-show-the-nvv-sentence-on-the-front-of-the-transformation-card.md) — The transformation card is inverted; the front shows the sentence with the NVV and asks for a verbal rewrite. Only the templates change, not the fields.
 
 ### [development/](development/CLAUDE.md)
 
