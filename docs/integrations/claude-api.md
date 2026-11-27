@@ -68,7 +68,7 @@ The SDK retries connection errors, 408, 409, 429 and 5xx twice with backoff, hon
 
 ## Cost
 
-Claude Opus 5.5 costs $4 per million input tokens and $20 per million output tokens, thinking included. The prompt is under a thousand input tokens; the answer is a few hundred tokens plus thinking at medium effort, so a chunk costs a few cents. A `sync` at the default cap of 10 chunks costs well under a dollar. `learn-german -v sync` logs each call's request ID and token counts, which is the way to measure the real figure; the Claude Console's usage page shows the total.
+Claude Opus 5.5 costs $4 per million input tokens and $20 per million output tokens, thinking included. Measured over 50 calls, a call takes about 1,190 input and 500 output tokens and costs about 1.5 cents; with failed checks counted, a note in Anki costs about 1.9 cents, so a `sync` at the default cap of 10 chunks costs about 20 cents. [Cost of card generation](../research/card-generation-cost.md) has the measurement, the cost on other models and budget tables. `learn-german -v sync` logs each call's request ID and token counts, which is the way to measure the real figure; the Claude Console's usage page shows the total.
 
 What is paid for:
 
