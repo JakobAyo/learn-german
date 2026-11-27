@@ -2,10 +2,12 @@
 title: Check settings and Anki before selecting, and keep dry runs read-only
 summary: sync checks hint language and API key while wiring, then sets Anki up before selecting; a dry run only checks Anki answers and writes only the LLM cache.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Check settings and Anki before selecting, and keep dry runs read-only
+
+> **Amended by [0049](0049-drop-the-translation-card-and-the-hint-language.md)** (2026-11-27). `sync` no longer checks a hint language; the API key is the only setting checked while wiring. The Anki preflight and the read-only dry run still hold.
 
 ## Context
 

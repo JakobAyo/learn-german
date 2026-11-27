@@ -32,8 +32,6 @@ from tests.fakes.sources import FakeSource
 from tests.integration.anki.mock_ankiconnect import DECK, MockAnkiConnect
 
 TRANSFORMATION = NoteKind.TRANSFORMATION
-TRANSLATION = NoteKind.TRANSLATION
-BOTH = [TRANSFORMATION, TRANSLATION]
 
 DECISION = ChunkKey("entscheidung|treffen")
 CRITICISM = ChunkKey("kritik|üben")
@@ -118,8 +116,7 @@ def chunk_state(key: ChunkKey) -> ChunkState:
 
 
 @pytest.fixture
-def world(monkeypatch: pytest.MonkeyPatch) -> World:
-    monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "en")
+def world() -> World:
     world = World()
     world.add_sources()
     return world
@@ -128,29 +125,28 @@ def world(monkeypatch: pytest.MonkeyPatch) -> World:
 # --- Happy path, cap and ranking -------------------------------------------------------------
 
 
-def test_sync_pushes_two_notes_per_chunk_with_the_run_tags(world: World) -> None:
+def test_sync_pushes_one_note_per_chunk_with_the_run_tags(world: World) -> None:
     result = world.run("sync")
 
     assert result.code == 0
-    assert pushed(world.anki) == [(key, kind) for key in RANKED for kind in BOTH]
+    assert pushed(world.anki) == [(key, TRANSFORMATION) for key in RANKED]
     assert {note.tags for note in world.anki.notes} == {RUN_TAGS}
     assert world.anki.setup_calls == 1
     assert "Run run-20261124-1530: 4 chunks selected." in result.out
-    assert "added      entscheidung|treffen: transformation, translation" in result.out
-    assert "Run run-20261124-1530: 4 chunks done, 8 notes added to Anki" in result.out
-    assert chunk_state(DECISION).pushed == frozenset(BOTH)
+    assert "added      entscheidung|treffen: transformation\n" in result.out
+    assert "Run run-20261124-1530: 4 chunks done, 4 notes added to Anki" in result.out
+    assert chunk_state(DECISION).pushed == {TRANSFORMATION}
 
 
 def test_sync_puts_the_card_content_into_the_note_fields(world: World) -> None:
     world.run("sync", "--cap", "1")
 
-    transformation, translation = world.anki.notes
-    fields = dict(translation.fields)
+    (note,) = world.anki.notes
+    fields = dict(note.fields)
     assert fields["ChunkKey"] == "entscheidung|treffen"
     assert fields["Chunk"] == "entscheidung treffen"
-    assert fields["HintLanguage"] == "en"
-    assert fields["Prompt"].startswith("[en] ")
-    assert dict(transformation.fields)["Prompt"].startswith("Verbal: ")
+    assert fields["Prompt"].startswith("Verbal: ")
+    assert "HintLanguage" not in fields
 
 
 def test_sync_respects_the_cap_and_the_ranking(world: World) -> None:
@@ -158,8 +154,8 @@ def test_sync_respects_the_cap_and_the_ranking(world: World) -> None:
 
     assert result.code == 0
     assert world.requested() == RANKED[:3]
-    assert pushed(world.anki) == [(key, kind) for key in RANKED[:3] for kind in BOTH]
-    assert "3 chunks done, 6 notes added" in result.out
+    assert pushed(world.anki) == [(key, TRANSFORMATION) for key in RANKED[:3]]
+    assert "3 chunks done, 3 notes added" in result.out
 
 
 def test_cap_flag_overrides_the_environment(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -171,19 +167,15 @@ def test_cap_flag_overrides_the_environment(world: World, monkeypatch: pytest.Mo
     assert world.requested() == RANKED[:3]
 
 
-def test_sync_skips_notes_anki_already_has(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "en")
-    world = World(
-        anki=FakeAnkiGateway([(TRANSFORMATION, DECISION), *[(kind, DISPOSAL) for kind in BOTH]])
-    )
+def test_sync_skips_notes_anki_already_has() -> None:
+    world = World(anki=FakeAnkiGateway([(TRANSFORMATION, DECISION), (TRANSFORMATION, DISPOSAL)]))
     world.add_sources()
 
     result = world.run("sync")
 
     assert result.code == 0
-    assert DISPOSAL not in world.requested()
-    assert pushed(world.anki)[0] == (DECISION, TRANSLATION)
-    assert len(world.anki.notes) == 5
+    assert world.requested() == [CRITICISM, STATEMENT]
+    assert pushed(world.anki) == [(CRITICISM, TRANSFORMATION), (STATEMENT, TRANSFORMATION)]
 
 
 # --- Dry run ---------------------------------------------------------------------------------
@@ -196,17 +188,17 @@ def test_dry_run_prints_the_notes_and_a_real_sync_reuses_the_content(world: Worl
     assert world.anki.add_calls == 0
     assert world.anki.setup_calls == 0
     assert "Dry run run-20261124-1530: 2 chunks selected." in dry.out
-    assert "would add  entscheidung|treffen: transformation, translation" in dry.out
-    assert "    translation note\n      Chunk:        entscheidung treffen" in dry.out
-    assert "      HintLanguage: en" in dry.out
-    assert "2 chunks ready, 4 notes would be added.\nNothing was written to Anki." in dry.out
+    assert "would add  entscheidung|treffen: transformation\n" in dry.out
+    assert "    transformation note\n      Chunk:    entscheidung treffen" in dry.out
+    assert "HintLanguage" not in dry.out
+    assert "2 chunks ready, 2 notes would be added.\nNothing was written to Anki." in dry.out
     assert chunk_state(DECISION).pushed == frozenset()
 
     real = world.run("sync", "--cap", "2")
 
     assert real.code == 0
     assert world.requested() == RANKED[:2]
-    assert len(world.anki.notes) == 4
+    assert len(world.anki.notes) == 2
 
 
 def test_dry_run_without_anki_warns_and_skips_the_anki_check(world: World) -> None:
@@ -229,12 +221,7 @@ def test_a_chunk_that_fails_generation_stays_pending_with_its_error(world: World
     result = world.run("sync")
 
     assert result.code == EXIT_ITEM_FAILED
-    assert [key for key, _ in pushed(world.anki)] == [
-        DECISION,
-        DECISION,
-        *[STATEMENT] * 2,
-        *[DISPOSAL] * 2,
-    ]
+    assert [key for key, _ in pushed(world.anki)] == [DECISION, STATEMENT, DISPOSAL]
     assert "failed     kritik|üben: fake provider fails for kritik|üben" in result.out
     assert "Failed: 1 chunk. It stays pending, and the next sync tries it again:" in result.out
     state = chunk_state(CRITICISM)
@@ -246,27 +233,29 @@ def test_a_chunk_that_fails_generation_stays_pending_with_its_error(world: World
     retry = world.run("sync")
 
     assert retry.code == 0
-    assert pushed(world.anki)[-2:] == [(CRITICISM, kind) for kind in BOTH]
+    assert pushed(world.anki)[-1] == (CRITICISM, TRANSFORMATION)
     assert chunk_state(CRITICISM).last_error is None
 
 
-def test_a_rejected_second_note_is_created_alone_by_the_next_sync(world: World) -> None:
-    world.anki.reject = {(TRANSLATION, DECISION)}
+def test_a_rejected_note_stays_pending_and_the_next_sync_adds_it(world: World) -> None:
+    world.anki.reject = {(TRANSFORMATION, DECISION)}
 
     result = world.run("sync", "--cap", "1")
 
     assert result.code == EXIT_ITEM_FAILED
-    assert pushed(world.anki) == [(DECISION, TRANSFORMATION)]
-    assert "failed     entscheidung|treffen (transformation note added): " in result.out
-    assert chunk_state(DECISION).pushed == {TRANSFORMATION}
+    assert pushed(world.anki) == []
+    assert "failed     entscheidung|treffen: " in result.out
+    state = chunk_state(DECISION)
+    assert state.pushed == frozenset()
+    assert state.last_error is not None
 
     world.anki.reject = set()
     retry = world.run("sync", "--cap", "1")
 
     assert retry.code == 0
-    assert pushed(world.anki) == [(DECISION, TRANSFORMATION), (DECISION, TRANSLATION)]
+    assert pushed(world.anki) == [(DECISION, TRANSFORMATION)]
     assert world.requested() == [DECISION]
-    assert "added      entscheidung|treffen: translation" in retry.out
+    assert "added      entscheidung|treffen: transformation" in retry.out
 
 
 class FailingAfter(FakeAnkiGateway):
@@ -286,23 +275,18 @@ class FailingAfter(FakeAnkiGateway):
 def test_anki_lost_mid_run_stops_at_once_and_keeps_what_was_pushed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "en")
-    world = World(anki=FailingAfter(calls=3))
+    world = World(anki=FailingAfter(calls=2))
     world.add_sources()
 
     result = world.run("sync")
 
     assert result.code == EXIT_FATAL
-    assert pushed(world.anki) == [
-        (DECISION, TRANSFORMATION),
-        (DECISION, TRANSLATION),
-        (CRITICISM, TRANSFORMATION),
-    ]
-    assert world.requested() == [DECISION, CRITICISM]
-    assert "1 chunk done, 2 notes added" in result.out
+    assert pushed(world.anki) == [(DECISION, TRANSFORMATION), (CRITICISM, TRANSFORMATION)]
+    assert world.requested() == [DECISION, CRITICISM, STATEMENT]
+    assert "2 chunks done, 2 notes added" in result.out
     assert "stopped early" in result.out
     assert "Error: fake Anki is unavailable" in result.err
-    assert chunk_state(CRITICISM).pushed == {TRANSFORMATION}
+    assert chunk_state(STATEMENT).pushed == frozenset()
 
 
 class RejectedKey(FakeProvider):
@@ -313,10 +297,7 @@ class RejectedKey(FakeProvider):
         raise LLMAccessError("The Claude API rejected the API key. Check ANTHROPIC_API_KEY.")
 
 
-def test_a_rejected_api_key_stops_the_run_at_the_first_chunk(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "en")
+def test_a_rejected_api_key_stops_the_run_at_the_first_chunk() -> None:
     world = World(provider=RejectedKey())
     world.add_sources()
 
@@ -349,20 +330,6 @@ def test_unreachable_anki_stops_before_any_llm_call(world: World) -> None:
     assert result.code == EXIT_FATAL
     assert "Error: fake Anki is unavailable" in result.err
     assert world.provider.requests == []
-
-
-def test_missing_hint_language_is_refused_before_any_call(
-    world: World, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.delenv("LEARN_GERMAN_HINT_LANGUAGE")
-
-    for args in (["sync"], ["sync", "--dry-run"]):
-        result = world.run(*args)
-
-        assert result.code == EXIT_FATAL
-        assert "No hint language is set" in result.err
-    assert world.provider.requests == []
-    assert world.anki.setup_calls == 0
 
 
 def test_missing_api_key_is_refused_before_any_call(world: World) -> None:
@@ -398,8 +365,8 @@ def test_sync_twice_creates_no_duplicates(world: World) -> None:
     again = world.run("sync")
 
     assert again.code == 0
-    assert len(world.anki.notes) == 8
-    assert world.anki.add_calls == 8
+    assert len(world.anki.notes) == 4
+    assert world.anki.add_calls == 4
     assert len(world.provider.requests) == 4
     assert "Nothing to sync" in again.out
 
@@ -423,11 +390,6 @@ def test_sync_through_the_real_gateway_sets_up_anki_and_adds_tagged_notes(world:
     assert first.code == 0
     assert second.code == 0
     assert DECK in mock.decks
-    assert [note.deck for note in mock.notes] == [DECK] * 4
-    assert [note.fields["ChunkKey"] for note in mock.notes] == [
-        DECISION.value,
-        DECISION.value,
-        CRITICISM.value,
-        CRITICISM.value,
-    ]
+    assert [note.deck for note in mock.notes] == [DECK] * 2
+    assert [note.fields["ChunkKey"] for note in mock.notes] == [DECISION.value, CRITICISM.value]
     assert all(note.tags == list(RUN_TAGS) for note in mock.notes)

@@ -37,7 +37,6 @@ from tests.unit.selection.builders import (
 
 QUESTION = ChunkKey("frage|in|stellen")
 TRANSFORMATION = NoteKind.TRANSFORMATION
-TRANSLATION = NoteKind.TRANSLATION
 RUN = RunId("run-20261124-1530")
 
 DECISION_SHORT = "Der Rat traf eine Entscheidung."
@@ -103,17 +102,15 @@ def fixtures(uow: UnitOfWork) -> UnitOfWork:
 
 
 def test_selector_returns_expected_chunks_missing_kinds_and_order(fixtures: UnitOfWork) -> None:
-    push_locally(fixtures, FORCE, TRANSLATION)
-    gateway = FakeAnkiGateway(
-        existing=[(TRANSLATION, DISPOSAL), (TRANSFORMATION, ROLE), (TRANSLATION, ROLE)]
-    )
+    push_locally(fixtures, FORCE, TRANSFORMATION)
+    gateway = FakeAnkiGateway(existing=[(TRANSFORMATION, ROLE)])
 
     selected = selector(fixtures, gateway).select(3)
 
     assert summary(selected) == [
+        (DECISION, {TRANSFORMATION}, DECISION_TEN),
         (DISPOSAL, {TRANSFORMATION}, DISPOSAL_TWELVE),
-        (FORCE, {TRANSFORMATION}, FORCE_SEVEN),
-        (DECISION, {TRANSFORMATION, TRANSLATION}, DECISION_TEN),
+        (QUESTION, {TRANSFORMATION}, QUESTION_EIGHT),
     ]
 
 
@@ -125,7 +122,7 @@ def test_selector_with_an_empty_deck_ranks_by_occurrences(fixtures: UnitOfWork) 
 
 
 def test_selector_skips_chunks_done_locally_even_if_anki_lacks_them(fixtures: UnitOfWork) -> None:
-    push_locally(fixtures, DECISION, TRANSFORMATION, TRANSLATION)
+    push_locally(fixtures, DECISION, TRANSFORMATION)
 
     selected = selector(fixtures).select(10)
 
@@ -154,7 +151,7 @@ def test_selector_stops_when_anki_is_unreachable(fixtures: UnitOfWork) -> None:
 def test_selector_with_empty_filter_chain_skips_the_deck_check(fixtures: UnitOfWork) -> None:
     selected = selector(fixtures, chunk_filter=FilterChain()).select(1)
 
-    assert summary(selected) == [(DECISION, {TRANSFORMATION, TRANSLATION}, DECISION_TEN)]
+    assert summary(selected) == [(DECISION, {TRANSFORMATION}, DECISION_TEN)]
 
 
 class AddsUnknownChunk:
@@ -181,10 +178,9 @@ def test_selected_chunk_builds_the_card_request_from_its_occurrence() -> None:
     picked = occurrence(DECISION_TEN, context="Es war spät. " + DECISION_TEN)
     selected = SelectedChunk(pending(DECISION, 3), picked)
 
-    assert selected.card_request("en") == CardRequest(
+    assert selected.card_request() == CardRequest(
         key=DECISION,
         kind=ChunkKind.NVV,
         sentence=DECISION_TEN,
         context="Es war spät. " + DECISION_TEN,
-        hint_language="en",
     )

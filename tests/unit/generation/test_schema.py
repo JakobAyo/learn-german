@@ -9,7 +9,7 @@ from learn_german.domain.errors import GenerationError
 from learn_german.domain.models import CardContent
 from tests.unit.generation.builders import CONTENT, DECISION
 
-FIELDS = ["citation_form", "shortened_sentence", "verbal_rewrite", "translation", "meaning"]
+FIELDS = ["citation_form", "shortened_sentence", "verbal_rewrite", "meaning"]
 
 
 def _answer(**changes: object) -> str:
@@ -48,8 +48,8 @@ def test_values_are_stripped() -> None:
         pytest.param("Hier ist die Karte.", id="prose"),
         pytest.param(_answer(meaning=None), id="missing-field"),
         pytest.param(_answer(extra="x"), id="extra-field"),
-        pytest.param(_answer(translation="   "), id="blank-field"),
-        pytest.param(_answer(translation=3), id="wrong-type"),
+        pytest.param(_answer(verbal_rewrite="   "), id="blank-field"),
+        pytest.param(_answer(verbal_rewrite=3), id="wrong-type"),
         pytest.param("[]", id="not-an-object"),
     ],
 )

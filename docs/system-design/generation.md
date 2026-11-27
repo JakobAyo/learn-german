@@ -2,14 +2,14 @@
 title: Generation
 summary: How a CardRequest becomes checked, cached CardContent: provider port, versioned prompt, sanity checks, cache decorator and wiring.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Generation
 
 ## Purpose
 
-Explains the generate stage of `sync` ([Pipeline](pipeline.md)): one LLM call per chunk turns a `CardRequest` into the `CardContent` that fills both notes ([0012](../decisions/0012-make-both-cards-practise-the-chunk.md)). Read this before changing the prompt, adding a provider or touching the cache. The Claude API specifics are in [Claude API](../integrations/claude-api.md).
+Explains the generate stage of `sync` ([Pipeline](pipeline.md)): one LLM call per chunk turns a `CardRequest` into the `CardContent` that fills the chunk's note ([0012](../decisions/0012-make-both-cards-practise-the-chunk.md), [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md)). Read this before changing the prompt, adding a provider or touching the cache. The Claude API specifics are in [Claude API](../integrations/claude-api.md).
 
 ## Modules
 
@@ -17,7 +17,7 @@ Explains the generate stage of `sync` ([Pipeline](pipeline.md)): one LLM call pe
 |---|---|
 | `ports.LLMProvider` | `name`, `model`, `prompt_version` and `generate(request) -> CardContent`. |
 | `adapters/llm/prompt.py` | `PROMPT_VERSION`, `load_template()` and the pure `render_prompt(template, request)` ([0035](../decisions/0035-version-the-card-prompt-as-a-template-with-a-pinned-hash.md)). |
-| `adapters/llm/prompts/card_v1.md` | The prompt template of `card-v1`. |
+| `adapters/llm/prompts/card_v2.md` | The prompt template of `card-v2`, the current version. `card-v1` also asked for a translation and was removed with it (0049). |
 | `adapters/llm/schema.py` | `CardOutput`, the pydantic model of the answer, and `CARD_SCHEMA`, the JSON schema sent as output format. |
 | `adapters/llm/claude.py` | `AnthropicProvider` ([0037](../decisions/0037-call-claude-with-a-json-schema-and-split-errors-into-fatal-and-item.md)). |
 | `adapters/llm/errors.py` | `LLMAccessError` (fatal) and `LLMRequestError` (item). |
@@ -37,14 +37,13 @@ The order matters: the checks run before the cache, so only content that passed 
 
 ## The request
 
-`CardRequest` carries the chunk key and kind, the sentence and context picked by `ShortestSentencePicker` ([0032](../decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md)), and the hint language. The prompt asks for:
+`CardRequest` carries the chunk key and kind, the sentence and context picked by `ShortestSentencePicker` ([0032](../decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md)). The prompt asks for:
 
 | Field | Note field | Rule in the prompt |
 |---|---|---|
 | `citation_form` | `Chunk` | Dictionary form with the usual article or preposition ([0028](../decisions/0028-let-the-llm-supply-the-citation-form.md)) |
 | `shortened_sentence` | `Answer` | The clause around the chunk, 10 to 20 words; a sentence under 10 words is kept and never made longer |
-| `verbal_rewrite` | transformation `Prompt` | The chunk replaced by one verb, or the closest plain paraphrase |
-| `translation` | translation `Prompt` | `shortened_sentence` in the hint language |
+| `verbal_rewrite` | `Prompt` | The chunk replaced by one verb, or the closest plain paraphrase |
 | `meaning` | `Meaning` | One German line, "citation form = explanation" |
 
 ## Sanity checks
@@ -67,7 +66,7 @@ The key is the SHA-256 of canonical JSON holding provider, model, prompt version
 ## Changing the prompt
 
 1. Add `prompts/card_vN.md` and map it in `_TEMPLATE_FILES`; set `PROMPT_VERSION = "card-vN"`.
-2. Record the template's SHA-256 in `tests/data/llm/prompt_hashes.json` and update the golden file `tests/data/llm/card_v1_prompt.golden.txt` (or add one for the new version).
+2. Record the template's SHA-256 in `tests/data/llm/prompt_hashes.json` and rename and update the golden file `tests/data/llm/card_v2_prompt.golden.txt` for the new version.
 3. Run `tools/eval/run_eval.py` and read the cards ([Claude API](../integrations/claude-api.md#manual-evaluation)).
 
 The hash test fails if step 1 is skipped.

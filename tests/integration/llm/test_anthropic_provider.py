@@ -30,7 +30,6 @@ ANSWER = json.dumps(
         "citation_form": CONTENT.citation_form,
         "shortened_sentence": CONTENT.shortened_sentence,
         "verbal_rewrite": CONTENT.verbal_rewrite,
-        "translation": CONTENT.translation,
         "meaning": CONTENT.meaning,
     },
     ensure_ascii=False,
@@ -182,7 +181,7 @@ def test_empty_api_key_is_missing_credentials() -> None:
 
 def test_custom_template_is_rendered() -> None:
     api = ScriptedApi([message(ANSWER)])
-    template = "Satz: $sentence ($hint_language, $key, $context)"
+    template = "Satz: $sentence ($key, $context)"
     provider = AnthropicProvider(api.client(), template=template)
 
     result: CardContent = provider.generate(REQUEST)

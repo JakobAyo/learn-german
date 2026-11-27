@@ -19,7 +19,6 @@ ANSWER = json.dumps(
         "citation_form": CONTENT.citation_form,
         "shortened_sentence": CONTENT.shortened_sentence,
         "verbal_rewrite": CONTENT.verbal_rewrite,
-        "translation": CONTENT.translation,
         "meaning": CONTENT.meaning,
     },
     ensure_ascii=False,

@@ -17,14 +17,13 @@ class SelectedChunk:
     chunk: PendingChunk
     occurrence: Candidate
 
-    def card_request(self, hint_language: str) -> CardRequest:
+    def card_request(self) -> CardRequest:
         """The LLM request for this chunk, built from the picked occurrence (0012)."""
         return CardRequest(
             key=self.chunk.key,
             kind=self.chunk.kind,
             sentence=self.occurrence.sentence,
             context=self.occurrence.context,
-            hint_language=hint_language,
         )
 
 

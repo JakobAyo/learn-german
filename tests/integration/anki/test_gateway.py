@@ -10,7 +10,6 @@ import pytest
 from learn_german.adapters.anki import (
     NOTE_TYPES,
     TRANSFORMATION_V1,
-    TRANSLATION_V1,
     AnkiActionError,
     NoteTypeSpec,
 )
@@ -27,7 +26,7 @@ from tests.integration.anki.mock_ankiconnect import DECK, MockAnkiConnect
 from tests.unit.notes.samples import CONTENT, DECISION, DISPOSAL, REQUEST, RUN
 
 TRANSFORMATION = NoteKind.TRANSFORMATION
-TRANSLATION = NoteKind.TRANSLATION
+OLD_TRANSLATION_TYPE = "learn-german-translation-v1"  # dropped by 0049
 BUILDER = NoteBuilder.for_run(provider="anthropic", model="claude-opus-5-5", run_id=RUN)
 
 
@@ -59,7 +58,7 @@ def test_check_available_rejects_an_old_ankiconnect() -> None:
 # --- ensure_setup ----------------------------------------------------------------------------
 
 
-def test_setup_creates_the_deck_and_both_note_types(anki: MockAnkiConnect) -> None:
+def test_setup_creates_the_deck_and_the_note_type(anki: MockAnkiConnect) -> None:
     anki.gateway().ensure_setup()
 
     assert anki.actions == [
@@ -68,13 +67,12 @@ def test_setup_creates_the_deck_and_both_note_types(anki: MockAnkiConnect) -> No
         "createDeck",
         "modelNames",
         "createModel",
-        "createModel",
     ]
     assert anki.params("createDeck") == [{"deck": DECK}]
     assert DECK in anki.decks
 
 
-@pytest.mark.parametrize("spec", [TRANSFORMATION_V1, TRANSLATION_V1], ids=lambda s: s.name)
+@pytest.mark.parametrize("spec", [TRANSFORMATION_V1], ids=lambda s: s.name)
 def test_setup_creates_a_note_type_from_its_spec(anki: MockAnkiConnect, spec: NoteTypeSpec) -> None:
     anki.gateway().ensure_setup()
 
@@ -102,7 +100,6 @@ def test_setup_a_second_time_creates_nothing(anki: MockAnkiConnect) -> None:
         "deckNames",
         "modelNames",
         "modelFieldNames",
-        "modelFieldNames",
     ]
 
 
@@ -120,15 +117,23 @@ def test_setup_leaves_an_existing_note_types_templates_and_styling_alone(
 
 
 def test_setup_fails_fatally_when_a_note_types_fields_differ(anki: MockAnkiConnect) -> None:
-    anki.add_model(TRANSLATION_V1.name, ["ChunkKey", "Chunk", "Meaning", "Answer", "Prompt"])
+    anki.add_model(TRANSFORMATION_V1.name, ["ChunkKey", "Chunk", "Meaning", "Answer"])
 
     with pytest.raises(NoteTypeMismatchError) as caught:
         anki.gateway().ensure_setup()
 
     message = str(caught.value)
     assert isinstance(caught.value, FatalError)
-    assert TRANSLATION_V1.name in message
-    assert "ChunkKey, Chunk, Meaning, Answer, Prompt, HintLanguage in that order" in message
+    assert TRANSFORMATION_V1.name in message
+    assert "ChunkKey, Chunk, Meaning, Answer, Prompt in that order" in message
+
+
+def test_setup_ignores_the_dropped_translation_note_type(anki: MockAnkiConnect) -> None:
+    anki.add_model(OLD_TRANSLATION_TYPE, ["ChunkKey", "Prompt", "HintLanguage"])
+
+    anki.gateway().ensure_setup()
+
+    assert [p["modelName"] for p in anki.params("createModel")] == [TRANSFORMATION_V1.name]
 
 
 def test_setup_fails_on_reordered_fields(anki: MockAnkiConnect) -> None:
@@ -167,7 +172,7 @@ def test_existing_keys_search_the_note_type_across_the_collection(anki: MockAnki
 
 
 def test_existing_keys_skip_note_info_when_there_are_no_notes(anki: MockAnkiConnect) -> None:
-    assert anki.gateway().existing_keys(TRANSLATION) == frozenset()
+    assert anki.gateway().existing_keys(TRANSFORMATION) == frozenset()
     assert anki.actions == ["findNotes"]
 
 
@@ -210,8 +215,8 @@ def test_add_notes_sends_one_add_note_per_draft(anki: MockAnkiConnect) -> None:
 
     gateway.add_notes(drafts())
 
-    assert anki.actions == ["addNote", "addNote"]
-    transformation, translation = (p["note"] for p in anki.params("addNote"))
+    assert anki.actions == ["addNote"]
+    (transformation,) = (p["note"] for p in anki.params("addNote"))
     assert transformation == {
         "deckName": DECK,
         "modelName": "learn-german-transformation-v1",
@@ -224,8 +229,6 @@ def test_add_notes_sends_one_add_note_per_draft(anki: MockAnkiConnect) -> None:
         ],
         "options": {"allowDuplicate": False, "duplicateScope": "collection"},
     }
-    assert isinstance(translation, dict)
-    assert translation["modelName"] == "learn-german-translation-v1"
 
 
 def test_add_notes_escape_html_in_field_values(anki: MockAnkiConnect) -> None:
@@ -247,10 +250,10 @@ def test_add_notes_turn_a_rejection_into_a_push_error(anki: MockAnkiConnect) -> 
     anki.errors["addNote"] = "cannot create note because it is empty"
 
     with pytest.raises(PushError) as caught:
-        gateway.add_notes(drafts(TRANSLATION))
+        gateway.add_notes(drafts(TRANSFORMATION))
 
     assert isinstance(caught.value, ItemError)
-    assert "translation note for entscheidung|treffen" in str(caught.value)
+    assert "transformation note for entscheidung|treffen" in str(caught.value)
     assert "cannot create note because it is empty" in str(caught.value)
 
 
@@ -258,7 +261,7 @@ def test_add_notes_refuse_a_draft_whose_fields_are_not_its_note_types(
     anki: MockAnkiConnect,
 ) -> None:
     (draft,) = drafts(TRANSFORMATION)
-    wrong = replace(draft, note_kind=TRANSLATION)
+    wrong = replace(draft, fields=(*draft.fields, ("HintLanguage", "en")))
 
     with pytest.raises(ValueError, match="has the fields"):
         anki.gateway().add_notes([wrong])
@@ -275,7 +278,7 @@ def test_add_notes_stop_fatally_when_anki_goes_away(anki: MockAnkiConnect) -> No
         gateway.add_notes(drafts(TRANSFORMATION))
 
 
-def test_notes_of_other_keys_and_kinds_do_not_count(anki: MockAnkiConnect) -> None:
-    anki.add_existing(TRANSLATION, DISPOSAL)
+def test_notes_of_other_note_types_do_not_count(anki: MockAnkiConnect) -> None:
+    anki.add_note(OLD_TRANSLATION_TYPE, {"ChunkKey": DISPOSAL.value})
 
     assert anki.gateway().existing_keys(TRANSFORMATION) == frozenset()

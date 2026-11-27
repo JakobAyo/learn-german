@@ -2,10 +2,12 @@
 title: Read settings with pydantic-settings, layered flag, environment, .env and TOML
 summary: pydantic-settings layers flags, LEARN_GERMAN_ variables, .env and config.toml; unknown TOML keys fail and the hint language is an ISO 639 code.
 status: active
-updated: 2026-11-25
+updated: 2026-11-27
 ---
 
 # Read settings with pydantic-settings, layered flag, environment, .env and TOML
+
+> **Amended by [0049](0049-drop-the-translation-card-and-the-hint-language.md)** (2026-11-27). The `hint_language` setting and its ISO 639 validation are removed. The layering and the unknown-key rule still hold, so a `config.toml` that still sets `hint_language` now fails.
 
 ## Context
 

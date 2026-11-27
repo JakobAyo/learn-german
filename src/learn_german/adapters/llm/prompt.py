@@ -11,10 +11,10 @@ from typing import Final
 
 from learn_german.domain.models import CardRequest
 
-PROMPT_VERSION: Final = "card-v1"
+PROMPT_VERSION: Final = "card-v2"
 """Part of every cache key (0004). Bump it, and add a template file, for any prompt change."""
 
-_TEMPLATE_FILES: Final = {"card-v1": "card_v1.md"}
+_TEMPLATE_FILES: Final = {"card-v2": "card_v2.md"}
 _NO_CONTEXT: Final = "(none)"
 
 
@@ -30,5 +30,4 @@ def render_prompt(template: str, request: CardRequest) -> str:
         key=request.key.value,
         sentence=request.sentence.strip(),
         context=request.context.strip() or _NO_CONTEXT,
-        hint_language=request.hint_language,
     )

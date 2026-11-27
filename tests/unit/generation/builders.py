@@ -15,7 +15,7 @@ CONTEXT = (
     "Die Bauarbeiten sollen im Frühjahr beginnen."
 )
 
-REQUEST = CardRequest(DECISION, ChunkKind.NVV, LONG_SENTENCE, CONTEXT, "en")
+REQUEST = CardRequest(DECISION, ChunkKind.NVV, LONG_SENTENCE, CONTEXT)
 
 CONTENT = CardContent(
     citation_form="eine Entscheidung treffen",
@@ -23,7 +23,6 @@ CONTENT = CardContent(
         "Der Stadtrat hat endlich eine Entscheidung über den Bau der neuen Brücke getroffen."
     ),
     verbal_rewrite="Der Stadtrat hat endlich über den Bau der neuen Brücke entschieden.",
-    translation="The city council has finally made a decision on building the new bridge.",
     meaning="eine Entscheidung treffen = entscheiden, sich festlegen",
 )
 
@@ -33,9 +32,8 @@ def request(
     key: ChunkKey = DECISION,
     sentence: str = LONG_SENTENCE,
     context: str = CONTEXT,
-    hint_language: str = "en",
 ) -> CardRequest:
-    return CardRequest(key, ChunkKind.NVV, sentence, context, hint_language)
+    return CardRequest(key, ChunkKind.NVV, sentence, context)
 
 
 def content(**changes: str) -> CardContent:

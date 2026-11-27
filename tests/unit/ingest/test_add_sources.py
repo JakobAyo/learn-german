@@ -122,7 +122,7 @@ def test_add_sources_force_fetches_again_and_applies_the_reextract_rules(
     add(uow, source, "fake:a")
     with uow:
         uow.chunk_states.record_pushed(
-            VERFUEGUNG, NoteKind.TRANSLATION, run_id=RunId("run-20261124-1530"), at=DEFAULT_NOW
+            VERFUEGUNG, NoteKind.TRANSFORMATION, run_id=RunId("run-20261124-1530"), at=DEFAULT_NOW
         )
     source.texts["fake:a"] = "Die Ministerin nahm Stellung."
 

@@ -159,13 +159,11 @@ def ingest_services(
 def sync_service(settings: Settings, overrides: Overrides | None = None) -> Iterator[SyncService]:
     """Check the settings `sync` needs, open the database and wire `SyncService` (0046).
 
-    The hint language and the provider's API key are checked first, before the database is
-    opened or Anki asked. Raises `ConfigError` without a hint language or with an unknown
-    provider, `MissingCredentialsError` without an API key, and `DatabaseError` if the
-    database cannot be opened.
+    The provider's API key is checked first, before the database is opened or Anki asked.
+    Raises `ConfigError` with an unknown provider, `MissingCredentialsError` without an API
+    key, and `DatabaseError` if the database cannot be opened.
     """
     overrides = overrides or Overrides()
-    hint_language = settings.require_hint_language()  # R16, 0015
     provider = overrides.provider or llm_provider(settings, overrides.llm_http_client)
     clock = overrides.clock or SystemClock()
     uow = SqliteUnitOfWork(open_database(settings.database_path))
@@ -185,7 +183,6 @@ def sync_service(settings: Settings, overrides: Overrides | None = None) -> Iter
             ),
             offline_selector=ChunkSelector(uow, FilterChain(), ranker, picker),
             clock=clock,
-            hint_language=hint_language,
         )
     finally:
         uow.close()

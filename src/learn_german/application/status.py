@@ -31,7 +31,7 @@ class StatusReport:
     pending: int
     """Chunks with neither note pushed yet."""
     partial: int
-    """Chunks with one of their two notes pushed."""
+    """Chunks with some but not all of their notes pushed (none while there is one kind, 0049)."""
     top_chunks: tuple[PendingChunk, ...]
     """The best-ranked pending and partial chunks, best first."""
 

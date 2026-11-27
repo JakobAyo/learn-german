@@ -9,7 +9,6 @@ def content_for(request: CardRequest) -> CardContent:
         citation_form=f"{key.noun} {key.verb}",
         shortened_sentence=request.sentence,
         verbal_rewrite=f"Verbal: {request.sentence}",
-        translation=f"[{request.hint_language}] {request.sentence}",
         meaning=f"{key.noun} {key.verb} = Bedeutung",
     )
 

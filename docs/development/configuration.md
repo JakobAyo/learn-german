@@ -2,7 +2,7 @@
 title: Configuration
 summary: Every setting with its default, environment variable and TOML key, where config.toml and .env are read from, and the order in which sources override each other.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Configuration
@@ -25,8 +25,7 @@ Highest first:
 
 | TOML key | Environment variable | Default | Meaning |
 |---|---|---|---|
-| `hint_language` | `LEARN_GERMAN_HINT_LANGUAGE` | none, required for generation | ISO 639 code of the translation-prompt language, for example `en` (R16) |
-| `cap` | `LEARN_GERMAN_CAP` | `10` | Most new chunks per `sync`, each giving two notes (R12); `sync --cap N` overrides it |
+| `cap` | `LEARN_GERMAN_CAP` | `10` | Most new chunks per `sync`, each giving one note (R12); `sync --cap N` overrides it |
 | `provider` | `LEARN_GERMAN_PROVIDER` | `anthropic` | LLM provider (R17); v1 knows only `anthropic`, and another name stops `sync` |
 | `model` | `LEARN_GERMAN_MODEL` | `claude-opus-5-5` | LLM model ID (0015) |
 | `deck` | `LEARN_GERMAN_DECK` | `learn-german::chunks` | Anki deck the tool owns (0016) |
@@ -37,15 +36,15 @@ Highest first:
 Example `config.toml`:
 
 ```toml
-hint_language = "en"
 cap = 5
+model = "claude-opus-5-5"
 ```
 
 ## Rules
 
-- An unknown key in `config.toml` is an error, so a typo does not go unnoticed. Unrelated variables in `.env` are ignored.
+- An unknown key in `config.toml` is an error, so a typo does not go unnoticed. Unrelated variables in `.env` are ignored. A `config.toml` from before [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md) that still sets `hint_language` fails for this reason: delete that line.
 - An invalid value in any source stops the command with a message that names the setting.
-- The hint language and the API key are checked only by the commands that need them, so `add`, `status` and `reextract` work without them. `sync`, including `sync --dry-run`, checks both before it opens the database or asks Anki ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)).
+- The API key is checked only by the commands that need it, so `add`, `status` and `reextract` work without it. `sync`, including `sync --dry-run`, checks it before it opens the database or asks Anki ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)).
 
 ## Related
 

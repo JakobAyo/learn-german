@@ -12,7 +12,6 @@ from tests.fakes.anki import FakeAnkiGateway
 from tests.unit.selection.builders import DECISION, DISPOSAL, FORCE, pending
 
 TRANSFORMATION = NoteKind.TRANSFORMATION
-TRANSLATION = NoteKind.TRANSLATION
 
 
 class DropKey:
@@ -72,9 +71,8 @@ def test_filter_chain_stops_once_nothing_is_left() -> None:
 @pytest.mark.parametrize(
     ("in_deck", "missing"),
     [
-        pytest.param([], {TRANSFORMATION, TRANSLATION}, id="no-note-in-deck"),
-        pytest.param([TRANSLATION], {TRANSFORMATION}, id="one-note-in-deck"),
-        pytest.param([TRANSFORMATION, TRANSLATION], None, id="both-notes-dropped"),
+        pytest.param([], {TRANSFORMATION}, id="no-note-in-deck"),
+        pytest.param([TRANSFORMATION], None, id="note-in-deck-dropped"),
     ],
 )
 def test_already_in_deck_filter_keeps_only_missing_note_kinds(
@@ -95,21 +93,20 @@ def test_already_in_deck_filter_never_adds_back_a_locally_pushed_kind() -> None:
 
 
 def test_already_in_deck_filter_keeps_input_order_and_counts() -> None:
-    gateway = FakeAnkiGateway(existing=[(TRANSLATION, DISPOSAL)])
+    gateway = FakeAnkiGateway(existing=[(TRANSFORMATION, DISPOSAL)])
     chunks = [pending(FORCE, 3), pending(DISPOSAL, 2), pending(DECISION, 5)]
 
     result = AlreadyInDeckFilter(gateway).apply(chunks)
 
-    assert [(c.key, c.occurrences) for c in result] == [(FORCE, 3), (DISPOSAL, 2), (DECISION, 5)]
-    assert result[1].missing == {TRANSFORMATION}
+    assert [(c.key, c.occurrences) for c in result] == [(FORCE, 3), (DECISION, 5)]
 
 
 def test_already_in_deck_filter_asks_only_for_needed_kinds() -> None:
     gateway = CountingGateway()
 
-    AlreadyInDeckFilter(gateway).apply([pending(DECISION, missing=[TRANSLATION])])
+    AlreadyInDeckFilter(gateway).apply([pending(DECISION, missing=[TRANSFORMATION])])
 
-    assert gateway.asked == [TRANSLATION]
+    assert gateway.asked == [TRANSFORMATION]
 
 
 def test_already_in_deck_filter_does_not_ask_anki_about_nothing() -> None:

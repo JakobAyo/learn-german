@@ -5,9 +5,9 @@ chunk's card content and the sanity-check problems are written as one JSON line;
 cached, so every run asks again.
 
     uv run python tools/eval/run_eval.py [--chunks tools/eval/chunks.tsv] [--model ID]
-        [--effort low|medium|high|xhigh|max] [--hint-language en]
+        [--effort low|medium|high|xhigh|max]
 
-The model and hint language default to the learn-german settings (config.toml, environment).
+The model defaults to the learn-german settings (config.toml, environment).
 """
 
 import argparse
@@ -28,7 +28,7 @@ from learn_german.domain.models import CardRequest, ChunkKey, ChunkKind
 DEFAULT_CHUNKS = Path(__file__).with_name("chunks.tsv")
 
 
-def read_requests(path: Path, hint_language: str) -> list[CardRequest]:
+def read_requests(path: Path) -> list[CardRequest]:
     """One request per non-comment line: key, sentence, optional context."""
     requests = []
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -36,7 +36,7 @@ def read_requests(path: Path, hint_language: str) -> list[CardRequest]:
             continue
         key, sentence, *rest = line.split("\t")
         context = rest[0] if rest and rest[0] else sentence
-        requests.append(CardRequest(ChunkKey(key), ChunkKind.NVV, sentence, context, hint_language))
+        requests.append(CardRequest(ChunkKey(key), ChunkKind.NVV, sentence, context))
     return requests
 
 
@@ -48,23 +48,22 @@ def main() -> int:
     parser.add_argument("--chunks", type=Path, default=DEFAULT_CHUNKS)
     parser.add_argument("--model")
     parser.add_argument("--effort", choices=get_args(Effort), default=DEFAULT_EFFORT)
-    parser.add_argument("--hint-language")
     args = parser.parse_args()
 
     try:
-        return _run(args.chunks, args.model, args.effort, args.hint_language)
+        return _run(args.chunks, args.model, args.effort)
     except FatalError as exc:
         sys.stderr.write(f"{exc}\n")
         return 2
 
 
-def _run(chunks: Path, model: str | None, effort: Effort, hint_language: str | None) -> int:
-    settings = load_settings({"model": model, "hint_language": hint_language})
+def _run(chunks: Path, model: str | None, effort: Effort) -> int:
+    settings = load_settings({"model": model})
     provider = AnthropicProvider.create(
         settings.require_anthropic_api_key(), model=settings.model, effort=effort
     )
     failed = 0
-    for request in read_requests(chunks, settings.require_hint_language()):
+    for request in read_requests(chunks):
         row: dict[str, object] = {"key": request.key.value, "sentence": request.sentence}
         try:
             content = provider.generate(request)

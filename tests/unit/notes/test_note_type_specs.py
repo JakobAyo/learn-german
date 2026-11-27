@@ -15,7 +15,6 @@ import pytest
 from learn_german.adapters.anki import (
     NOTE_TYPES,
     TRANSFORMATION_V1,
-    TRANSLATION_V1,
     CardTemplate,
     NoteTypeSpec,
 )
@@ -30,18 +29,6 @@ _FIELD_REFERENCE = re.compile(r"\{\{([^{}]+)\}\}")
 def test_transformation_v1_fields_are_frozen() -> None:
     assert TRANSFORMATION_V1.name == "learn-german-transformation-v1"
     assert TRANSFORMATION_V1.fields == ("ChunkKey", "Chunk", "Meaning", "Answer", "Prompt")
-
-
-def test_translation_v1_fields_are_frozen() -> None:
-    assert TRANSLATION_V1.name == "learn-german-translation-v1"
-    assert TRANSLATION_V1.fields == (
-        "ChunkKey",
-        "Chunk",
-        "Meaning",
-        "Answer",
-        "Prompt",
-        "HintLanguage",
-    )
 
 
 def test_every_note_kind_has_a_note_type() -> None:

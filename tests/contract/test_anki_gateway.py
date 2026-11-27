@@ -5,7 +5,7 @@ the real gateway does (requests, setup details) is in tests/integration/anki/.
 """
 
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import pytest
 
@@ -26,7 +26,7 @@ from tests.unit.notes.samples import (
 )
 
 TRANSFORMATION = NoteKind.TRANSFORMATION
-TRANSLATION = NoteKind.TRANSLATION
+CRITICISM = ChunkKey("kritik|üben")
 BUILDER = NoteBuilder.for_run(provider="anthropic", model="claude-opus-5-5", run_id=RUN)
 
 Existing = Iterable[tuple[NoteKind, ChunkKey]]
@@ -81,27 +81,28 @@ def disposal(*kinds: NoteKind) -> tuple[NoteDraft, ...]:
     return BUILDER.build(DISPOSAL_REQUEST, DISPOSAL_CONTENT, kinds or tuple(NoteKind))
 
 
+def criticism() -> tuple[NoteDraft, ...]:
+    return BUILDER.build(replace(REQUEST, key=CRITICISM), CONTENT)
+
+
 def test_new_deck_has_no_keys(make_anki: Callable[..., Anki]) -> None:
     gateway = make_anki().gateway
 
     assert gateway.existing_keys(TRANSFORMATION) == frozenset()
-    assert gateway.existing_keys(TRANSLATION) == frozenset()
 
 
 def test_notes_already_in_anki_are_existing_keys(make_anki: Callable[..., Anki]) -> None:
-    gateway = make_anki([(TRANSFORMATION, DECISION), (TRANSLATION, DISPOSAL)]).gateway
+    gateway = make_anki([(TRANSFORMATION, DECISION)]).gateway
 
     assert gateway.existing_keys(TRANSFORMATION) == {DECISION}
-    assert gateway.existing_keys(TRANSLATION) == {DISPOSAL}
 
 
-def test_added_notes_count_for_their_own_kind_only(make_anki: Callable[..., Anki]) -> None:
+def test_added_notes_become_existing_keys(make_anki: Callable[..., Anki]) -> None:
     gateway = make_anki().gateway
 
-    gateway.add_notes([*decision(TRANSFORMATION), *disposal()])
+    gateway.add_notes([*decision(), *disposal()])
 
     assert gateway.existing_keys(TRANSFORMATION) == {DECISION, DISPOSAL}
-    assert gateway.existing_keys(TRANSLATION) == {DISPOSAL}
 
 
 def test_check_available_changes_nothing(make_anki: Callable[..., Anki]) -> None:
@@ -110,7 +111,6 @@ def test_check_available_changes_nothing(make_anki: Callable[..., Anki]) -> None
     gateway.check_available()
 
     assert gateway.existing_keys(TRANSFORMATION) == {DECISION}
-    assert gateway.existing_keys(TRANSLATION) == frozenset()
 
 
 def test_setup_is_idempotent(make_anki: Callable[..., Anki]) -> None:
@@ -121,7 +121,6 @@ def test_setup_is_idempotent(make_anki: Callable[..., Anki]) -> None:
     gateway.ensure_setup()
 
     assert gateway.existing_keys(TRANSFORMATION) == {DECISION}
-    assert gateway.existing_keys(TRANSLATION) == {DECISION}
 
 
 def test_adding_nothing_changes_nothing(make_anki: Callable[..., Anki]) -> None:
@@ -133,24 +132,21 @@ def test_adding_nothing_changes_nothing(make_anki: Callable[..., Anki]) -> None:
 
 
 def test_adding_a_note_anki_has_is_an_item_error(make_anki: Callable[..., Anki]) -> None:
-    gateway = make_anki([(TRANSLATION, DECISION)]).gateway
+    gateway = make_anki([(TRANSFORMATION, DECISION)]).gateway
 
     with pytest.raises(PushError) as caught:
-        gateway.add_notes(decision(TRANSLATION))
+        gateway.add_notes(decision())
 
     assert isinstance(caught.value, ItemError)
 
 
 def test_notes_before_a_rejected_note_stay_added(make_anki: Callable[..., Anki]) -> None:
-    gateway = make_anki([(TRANSLATION, DECISION)]).gateway
+    gateway = make_anki([(TRANSFORMATION, DECISION)]).gateway
 
     with pytest.raises(PushError):
-        gateway.add_notes(
-            [*disposal(TRANSLATION), *decision(TRANSLATION), *disposal(TRANSFORMATION)]
-        )
+        gateway.add_notes([*disposal(), *decision(), *criticism()])
 
-    assert gateway.existing_keys(TRANSLATION) == {DECISION, DISPOSAL}
-    assert gateway.existing_keys(TRANSFORMATION) == frozenset()
+    assert gateway.existing_keys(TRANSFORMATION) == {DECISION, DISPOSAL}
 
 
 @pytest.mark.parametrize(

@@ -33,16 +33,10 @@ KEY = ChunkKey("entscheidung|treffen")
     ("pushed", "status", "missing"),
     [
         pytest.param(set(), ChunkStatus.PENDING, set(NoteKind), id="no-notes"),
-        pytest.param(
-            {NoteKind.TRANSFORMATION}, ChunkStatus.PARTIAL, {NoteKind.TRANSLATION}, id="one-note"
-        ),
-        pytest.param(
-            {NoteKind.TRANSLATION}, ChunkStatus.PARTIAL, {NoteKind.TRANSFORMATION}, id="other-note"
-        ),
-        pytest.param(set(NoteKind), ChunkStatus.DONE, set(), id="both-notes"),
+        pytest.param(set(NoteKind), ChunkStatus.DONE, set(), id="all-notes"),
     ],
 )
-def test_chunk_state_status_tells_none_one_and_both_apart(
+def test_chunk_state_status_tells_no_notes_and_all_notes_apart(
     pushed: set[NoteKind], status: ChunkStatus, missing: set[NoteKind]
 ) -> None:
     state = ChunkState(KEY, pushed=frozenset(pushed))
@@ -101,13 +95,13 @@ def test_note_draft_accepts_chunk_key_as_first_field() -> None:
 )
 def test_note_draft_requires_its_key_as_first_field(fields: tuple[tuple[str, str], ...]) -> None:
     with pytest.raises(ValueError, match="must start with"):
-        NoteDraft(NoteKind.TRANSLATION, KEY, fields=fields, tags=())
+        NoteDraft(NoteKind.TRANSFORMATION, KEY, fields=fields, tags=())
 
 
 def test_note_draft_rejects_duplicate_field_names() -> None:
     with pytest.raises(ValueError, match="unique"):
         NoteDraft(
-            NoteKind.TRANSLATION,
+            NoteKind.TRANSFORMATION,
             KEY,
             fields=(("ChunkKey", KEY.value), ("Prompt", "a"), ("Prompt", "b")),
             tags=(),

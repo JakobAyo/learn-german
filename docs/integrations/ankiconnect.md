@@ -2,7 +2,7 @@
 title: AnkiConnect
 summary: How the Anki adapter talks to the running Anki app through AnkiConnect: setup, settings, actions used, failure modes, tests and the manual smoke test.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # AnkiConnect
@@ -32,7 +32,7 @@ See [Configuration](../development/configuration.md). The request timeout (30 s)
 |---|---|
 | `adapters/anki/client.py` | `AnkiConnectClient`: the JSON envelope, the `error` field, transport failures, the version check. |
 | `adapters/anki/gateway.py` | `AnkiConnectGateway`, which implements `ports.AnkiGateway`. |
-| `adapters/anki/note_types.py` | `NoteTypeSpec`, `TRANSFORMATION_V1`, `TRANSLATION_V1` and `NOTE_TYPES`. |
+| `adapters/anki/note_types.py` | `NoteTypeSpec`, `TRANSFORMATION_V1` and `NOTE_TYPES`. |
 | `adapters/anki/templates/` | Card fronts and backs (`*_front.html`, `*_back.html`) and `style_v1.css`. |
 | `adapters/anki/errors.py` | `AnkiActionError` (fatal). |
 | `application/notes/` | `NoteBuilder` and `run_tags`: card content to the two `NoteDraft`s. |
@@ -104,28 +104,27 @@ Run before a release that touches `adapters/anki/` or the note types, against a 
    gateway.ensure_setup()
    gateway.ensure_setup()  # idempotent: no error, nothing new in Anki
    key = ChunkKey("entscheidung|treffen")
-   request = CardRequest(key, ChunkKind.NVV, "Der Stadtrat hat eine Entscheidung getroffen.", "", "en")
+   request = CardRequest(key, ChunkKind.NVV, "Der Stadtrat hat eine Entscheidung getroffen.", "")
    content = CardContent(
        citation_form="eine Entscheidung treffen",
        shortened_sentence="Der Stadtrat hat am Montag eine Entscheidung über die Brücke getroffen.",
        verbal_rewrite="Der Stadtrat hat am Montag über die Brücke entschieden.",
-       translation="The city council made a decision about the bridge on Monday.",
        meaning="eine Entscheidung treffen = entscheiden, sich festlegen & <festlegen>",
    )
    builder = NoteBuilder.for_run(
        provider="anthropic", model="claude-opus-5-5", run_id=RunId("run-20261126-1200")
    )
    gateway.add_notes(builder.build(request, content))
-   print({kind: gateway.existing_keys(kind) for kind in NoteKind})  # the key under both kinds
+   print({kind: gateway.existing_keys(kind) for kind in NoteKind})  # key under transformation
    gateway.add_notes(builder.build(request, content))  # raises PushError: duplicate
    ```
 
 3. In Anki, check:
-   - Tools, Manage Note Types lists `learn-german-transformation-v1` (fields `ChunkKey, Chunk, Meaning, Answer, Prompt`) and `learn-german-translation-v1` (the same plus `HintLanguage`), each with one card type.
-   - The deck `learn-german::chunks` exists and Browse shows exactly two notes, tagged `learn-german`, `provider::anthropic`, `model::claude-opus-5-5` and `run::run-20261126-1200`.
-   - Preview each card. Transformation front: "Rewrite in nominal style, using an NVV:" and the verbal sentence; back: front, a line, the answer, the chunk in bold, the meaning in italics. Translation front: the English prompt and "Use: **eine Entscheidung treffen**"; back: front, a line, the answer, the meaning. `ChunkKey` is on neither side; the meaning shows `& <festlegen>` literally. Check light and night mode.
+   - Tools, Manage Note Types lists `learn-german-transformation-v1` (fields `ChunkKey, Chunk, Meaning, Answer, Prompt`) with one card type, and no `learn-german-translation-v1`.
+   - The deck `learn-german::chunks` exists and Browse shows exactly one note, tagged `learn-german`, `provider::anthropic`, `model::claude-opus-5-5` and `run::run-20261126-1200`.
+   - Preview the card. Front: "Rewrite in nominal style, using an NVV:" and the verbal sentence; back: front, a line, the answer, the chunk in bold, the meaning in italics. `ChunkKey` is on neither side; the meaning shows `& <festlegen>` literally. Check light and night mode.
 4. Run `gateway.ensure_setup()` again and confirm in Anki that the deck and note types are unchanged.
-5. Rename a field of one note type in Anki, run `gateway.ensure_setup()`: it raises `NoteTypeMismatchError` naming both field lists. Rename it back.
+5. Rename a field of the note type in Anki, run `gateway.ensure_setup()`: it raises `NoteTypeMismatchError` naming both field lists. Rename it back.
 6. Close Anki and run `gateway.ensure_setup()`: it raises `AnkiUnavailableError` saying to start Anki.
 7. Delete the `learn-german-smoke` profile.
 

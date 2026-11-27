@@ -84,7 +84,7 @@ def _pending_line(report: StatusReport) -> str:
     total = report.pending + report.partial
     if total == 0:
         return "No chunks pending: every chunk found so far has its notes."
-    partial = f", {report.partial} of them with one of their two notes" if report.partial else ""
+    partial = f", {report.partial} of them with only some of their notes" if report.partial else ""
     return f"{plural(total, 'chunk')} pending{partial}."
 
 

@@ -2,7 +2,7 @@
 title: Claude API
 summary: How AnthropicProvider calls the Claude API: setup, key, model, request, failures and their messages, cost, caching, logging, tests and the eval script.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Claude API
@@ -15,10 +15,9 @@ Describes the one external call of card generation: what is sent to the Claude A
 
 1. Create an API key in the [Claude Console](https://platform.claude.com/) (Settings, API keys). The account needs credit or a payment method.
 2. Give it to the tool as `ANTHROPIC_API_KEY`: exported in the shell, or in a `.env` file in the directory `learn-german` is run from. Never in `config.toml`, which is meant to be shareable, and never in the repository ([0002](../decisions/0002-build-a-single-user-python-cli-in-a-public-repo.md)).
-3. Set the hint language (`hint_language = "en"` in `config.toml` or `LEARN_GERMAN_HINT_LANGUAGE`).
-4. Check both with `learn-german sync --dry-run --cap 1`: it stops at once with a message naming whichever is missing, before it opens the database or asks Anki ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)).
+3. Check it with `learn-german sync --dry-run --cap 1`: without a key it stops at once with a message saying so, before it opens the database or asks Anki ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)).
 
-`add`, `status` and `reextract` need neither.
+`add`, `status` and `reextract` do not need it.
 
 ## Settings
 
@@ -26,7 +25,6 @@ Describes the one external call of card generation: what is sent to the Claude A
 |---|---|---|
 | API key | none | `ANTHROPIC_API_KEY` in the environment or `.env` ([Configuration](../development/configuration.md)) |
 | Model | `claude-opus-5-5` ([0015](../decisions/0015-set-v1-run-defaults.md)) | `model` setting, `LEARN_GERMAN_MODEL` |
-| Hint language | none, required | `hint_language` setting; goes into the prompt as an ISO 639 code |
 
 Effort (`medium`), `max_tokens` (16 000) and retries (2) are constructor defaults of `AnthropicProvider`, not user settings.
 
@@ -74,14 +72,14 @@ Claude Opus 5.5 costs $4 per million input tokens and $20 per million output tok
 
 What is paid for:
 
-- One call per chunk that has no cached answer. Both notes of a chunk come from the same answer.
+- One call per chunk that has no cached answer. The chunk's one note comes from that answer.
 - `sync --dry-run` pays for its calls too, but caches the answers, so the real `sync` after it pays nothing for them.
 - An answer that fails a check, is refused or cut off is not cached and is paid for again on the next run.
 - The SDK's retries after a rate limit or server error are not billed, since those requests produced no answer.
 
 ## Caching
 
-**Local answer cache.** `CachingProvider` stores every answer that passed the checks in the `llm_cache` table, keyed by a hash of provider, model, prompt version and the request (chunk key, sentence, context, hint language) ([0036](../decisions/0036-check-card-content-then-cache-it-in-its-own-transaction.md)). The same request is never paid for twice: not after a dry run, not after Anki rejected a note, not after a fatal error halfway through a run. Changing the model, the hint language or `PROMPT_VERSION` misses the cache and pays again. The cache lives in the database file; deleting the database empties it.
+**Local answer cache.** `CachingProvider` stores every answer that passed the checks in the `llm_cache` table, keyed by a hash of provider, model, prompt version and the request (chunk key, chunk kind, sentence, context) ([0036](../decisions/0036-check-card-content-then-cache-it-in-its-own-transaction.md)). The same request is never paid for twice: not after a dry run, not after Anki rejected a note, not after a fatal error halfway through a run. Changing the model or `PROMPT_VERSION` misses the cache and pays again. The cache lives in the database file; deleting the database empties it.
 
 **API prompt caching is not used.** The whole prompt is below the 512-token minimum Claude Opus 5.5 needs for a cache entry, and its first paragraph already contains the chunk key, so requests share no long prefix. Adding `cache_control` would cost a write premium with no reads.
 
@@ -97,10 +95,10 @@ The real API is exercised only by hand: the eval script below, the [release chec
 
 ## Manual evaluation
 
-`tools/eval/run_eval.py` runs the prompt on the hand-written chunks in `tools/eval/chunks.tsv` against the real API and prints each chunk's content and sanity-check problems as one JSON line. It needs `ANTHROPIC_API_KEY` and a hint language, costs a few cents per chunk, bypasses the cache, and refuses to run when `CI` is set:
+`tools/eval/run_eval.py` runs the prompt on the hand-written chunks in `tools/eval/chunks.tsv` against the real API and prints each chunk's content and sanity-check problems as one JSON line. It needs `ANTHROPIC_API_KEY`, costs a few cents per chunk, bypasses the cache, and refuses to run when `CI` is set:
 
 ```bash
-uv run python tools/eval/run_eval.py --hint-language en [--model claude-opus-5-5] [--effort high]
+uv run python tools/eval/run_eval.py [--model claude-opus-5-5] [--effort high]
 ```
 
 Run it after a prompt or model change and read the cards before bumping `PROMPT_VERSION` for real use.

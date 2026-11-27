@@ -2,7 +2,7 @@
 title: Roadmap
 summary: Implementation milestones M0 to M8 from an empty repo to v1.0.0, each with deliverables, tests, CI changes and a done-when check.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Roadmap
@@ -10,6 +10,8 @@ updated: 2026-11-26
 ## Purpose
 
 Splits v1 (as fixed in [Requirements](requirements.md) and decisions 0002 to 0017) into milestones that each end in a working, tested, released state. Read this to know what to build next and what "done" means for it. How the code is organised is in [Code architecture](../system-design/code-architecture.md); how it is tested is in [Testing strategy](../development/testing-strategy.md); how changes reach `main` and become releases is in [CI and releases](../development/ci-and-releases.md).
+
+The milestones below describe v1 as it was built. After M8, [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md) dropped the translation-prompt note type and the hint language, so where a milestone mentions them, or two notes per chunk, the current tool has one transformation note per chunk and no hint language setting.
 
 ## Rules for every milestone
 

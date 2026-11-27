@@ -2,10 +2,12 @@
 title: Make both cards practise the chunk, two notes per chunk
 summary: Both cards drill the chunk on a shortened sentence; one note of each type per chunk, and the cap counts chunks.
 status: active
-updated: 2026-11-24
+updated: 2026-11-27
 ---
 
 # Make both cards practise the chunk, two notes per chunk
+
+> **Amended by [0049](0049-drop-the-translation-card-and-the-hint-language.md)** (2026-11-27). Each chunk now gets one note, the transformation note; there is no translation note. The card still drills the chunk on a shortened sentence, and the cap still counts chunks.
 
 ## Context
 
