@@ -67,7 +67,11 @@ class Ranker(Protocol):
 
 
 class LLMProvider(Protocol):
-    """Generates card content for one chunk (R17, 0004)."""
+    """Generates card content for one chunk (R17, 0004).
+
+    Decorators such as the cache and the sanity checks wrap a provider and pass `name`,
+    `model` and `prompt_version` through, so they look like the provider they wrap.
+    """
 
     @property
     def name(self) -> str:
@@ -75,15 +79,32 @@ class LLMProvider(Protocol):
         ...
 
     @property
-    def model(self) -> str: ...
+    def model(self) -> str:
+        """Model ID used in tags and cache keys, for example `claude-opus-5-5`."""
+        ...
+
+    @property
+    def prompt_version(self) -> str:
+        """Version of the prompt the provider sends. A new version invalidates the cache (0035)."""
+        ...
 
     def generate(self, request: CardRequest) -> CardContent:
-        """Raises `FatalError` on bad credentials and `ItemError` on unusable output."""
+        """Content for one chunk's notes.
+
+        Raises `FatalError` when every further call would fail too (bad key, unknown model,
+        no credit) and `ItemError` when only this chunk failed (unusable output, a server
+        error after retries).
+        """
         ...
 
 
 class AnkiGateway(Protocol):
     """The tool's deck and note types in Anki (R19, R20)."""
+
+    def check_available(self) -> None:
+        """Ask Anki whether it answers, changing nothing. `sync --dry-run` uses it instead of
+        `ensure_setup` (0046). Raises `FatalError` if Anki is unreachable."""
+        ...
 
     def ensure_setup(self) -> None:
         """Create the deck and missing note types. Raises `FatalError` if Anki is unreachable
@@ -91,7 +112,8 @@ class AnkiGateway(Protocol):
         ...
 
     def existing_keys(self, note_kind: NoteKind) -> frozenset[ChunkKey]:
-        """Chunk keys that already have a note of this kind in the deck."""
+        """Chunk keys that already have a note of this kind's note type anywhere in the
+        collection, not only in the deck (0039)."""
         ...
 
     def add_notes(self, drafts: Sequence[NoteDraft]) -> None:
@@ -107,6 +129,14 @@ class Clock(Protocol):
         ...
 
 
+class OccurrencePicker(Protocol):
+    """Chooses which occurrence of a chunk feeds its cards (0032)."""
+
+    def pick(self, occurrences: Sequence[Candidate]) -> Candidate:
+        """One of the occurrences, given oldest first. Raises ValueError if there are none."""
+        ...
+
+
 # --- Storage ---------------------------------------------------------------------------------
 
 
@@ -119,8 +149,20 @@ class SourceRepository(Protocol):
 
     def get(self, source_id: SourceId) -> Source | None: ...
 
-    def find_id(self, *, ref: str, content_hash: str) -> SourceId | None:
-        """The stored source with this ref or this content hash, if any."""
+    def find_id(
+        self, *, ref: str | None = None, content_hash: str | None = None
+    ) -> SourceId | None:
+        """The oldest stored source with this ref or this content hash, if any.
+
+        Either argument may be left out, so `add` can look a URL up before fetching it.
+        """
+        ...
+
+    def replace(self, source_id: SourceId, source: Source) -> None:
+        """Overwrite a stored source with a fresh copy, keeping its ID and candidates (R6).
+
+        Raises `DuplicateSourceError` if another stored source has the new ref or hash.
+        """
         ...
 
     def all(self) -> list[tuple[SourceId, Source]]:
@@ -136,12 +178,25 @@ class CandidateRepository(Protocol):
         adding it again updates its kind and context."""
         ...
 
+    def remove(self, source_id: SourceId, candidates: Iterable[Candidate]) -> None:
+        """Delete the source's occurrences with the same key and sentence as these (0017)."""
+        ...
+
     def for_source(self, source_id: SourceId) -> list[Candidate]:
         """The source's candidates in the order they were first added."""
         ...
 
     def for_key(self, key: ChunkKey) -> list[Candidate]:
         """All occurrences of a chunk key across sources, in the order they were first added."""
+        ...
+
+    def pending_chunks(self) -> list[PendingChunk]:
+        """Every chunk key with occurrences whose local state is not done, ordered by key.
+
+        `occurrences` counts the key's candidate rows across all sources (R13). `missing` is
+        the note kinds with no row in the pushed-notes record (0025); what Anki already has
+        is checked later by a filter (0033). `kind` is that of the key's oldest occurrence.
+        """
         ...
 
 

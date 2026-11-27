@@ -72,6 +72,20 @@ def test_each_migration_applies_to_previous_version(tmp_path: Path, migration: M
     assert schema_version(connection) == migration.version
 
 
+def test_migration_0002_drops_translation_notes_and_keeps_the_rest(tmp_path: Path) -> None:
+    connection = _raw(tmp_path / "lg.db")
+    migrate(connection, MIGRATIONS[:1])
+    connection.executemany(
+        "INSERT INTO pushed_notes VALUES (?, ?, 'run-20261124-1530', '2026-11-24T15:30:00+00:00')",
+        [("entscheidung|treffen", "transformation"), ("entscheidung|treffen", "translation")],
+    )
+
+    migrate(connection, MIGRATIONS[:2])
+
+    rows = connection.execute("SELECT chunk_key, note_kind FROM pushed_notes").fetchall()
+    assert rows == [("entscheidung|treffen", "transformation")]
+
+
 def test_failed_migration_keeps_previous_version(tmp_path: Path) -> None:
     connection = _raw(tmp_path / "lg.db")
     broken = Migration(LATEST + 1, "9999_broken.sql", "CREATE TABLE half (a);\nNOT SQL;")
@@ -132,7 +146,7 @@ def test_database_newer_than_code_is_refused(tmp_path: Path) -> None:
     path = tmp_path / "lg.db"
     _raw(path).execute(f"PRAGMA user_version = {LATEST + 1}")
 
-    with pytest.raises(DatabaseError, match="Upgrade learn-german"):
+    with pytest.raises(DatabaseError, match="Install the newer learn-german"):
         open_database(path)
 
 
@@ -190,8 +204,8 @@ def test_full_domain_model_survives_reopening(tmp_path: Path) -> None:
         state = reader.chunk_states.get(key)
         assert reader.sources.all() == [(source_id, source)]
         assert reader.candidates.for_key(key) == [candidate]
-        assert state.status is ChunkStatus.PARTIAL
-        assert state.missing == {NoteKind.TRANSLATION}
+        assert state.status is ChunkStatus.DONE
+        assert state.missing == frozenset()
         assert state.last_error is not None
         assert state.last_error.failed_at == DEFAULT_NOW
         assert reader.llm_cache.get("k1") == "{}"

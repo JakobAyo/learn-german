@@ -45,6 +45,19 @@ jobs:
       - run: uv sync --locked
       - run: make test
 
+  # Tests marked nlp need the 500 MB spaCy model (0027). Its own cache key keeps the model
+  # wheel cached; the other jobs save caches without it.
+  nlp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          enable-cache: true
+          cache-suffix: nlp
+      - run: uv sync --locked --extra model
+      - run: make test-nlp
+
   docs:
     runs-on: ubuntu-latest
     steps:

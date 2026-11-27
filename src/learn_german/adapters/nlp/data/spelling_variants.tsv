@@ -1,0 +1,7 @@
+# One-word spellings of a preposition and noun, mapped to the separate form (0011).
+# Columns: one-word form, noun lemma, preposition. Lowercase, sorted by the first column.
+infrage	frage	in
+instand	stand	in
+zugrunde	grund	zu
+zustande	stand	zu
+zutage	tag	zu

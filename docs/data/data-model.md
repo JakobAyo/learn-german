@@ -1,8 +1,8 @@
 ---
 title: Data model
-summary: SQLite tables, columns and constraints, how chunk status is derived from pushed notes, and how schema migrations are numbered and applied.
+summary: SQLite tables and constraints, how chunk status and pending chunks are derived from candidates and pushed notes, and how migrations are applied.
 status: active
-updated: 2026-11-25
+updated: 2026-11-27
 ---
 
 # Data model
@@ -33,7 +33,7 @@ One row per processed source (R5, R6).
 | `content_hash` | TEXT | SHA-256 of the normalised text, **unique** |
 | `text` | TEXT | The full text, so `reextract` never fetches again (0017) |
 
-Unique `ref` and unique `content_hash` together implement R6: a source is known by its address or by its text. Adding a duplicate raises `DuplicateSourceError`.
+Unique `ref` and unique `content_hash` together implement R6: a source is known by its address or by its text. Adding a duplicate raises `DuplicateSourceError`. `add --force` overwrites a row in place with `SourceRepository.replace`, keeping its `id` and so its candidates ([0042](../decisions/0042-recognise-known-sources-before-fetching-and-refresh-them-in-place.md)). `ref` is the URL as given or a file's absolute path; `text` is normalised and `content_hash` is its SHA-256 ([0044](../decisions/0044-normalise-source-text-by-paragraph-before-hashing.md)).
 
 ### `candidates`
 
@@ -48,7 +48,7 @@ One row per occurrence of a chunk in a source sentence (R10). Many rows can shar
 | `sentence` | TEXT | The source sentence |
 | `context` | TEXT | The sentence with one sentence either side |
 
-`(source_id, chunk_key, sentence)` is unique. Adding the same occurrence again updates its kind and context instead of duplicating it. Occurrence counts for ranking (R13) are `COUNT(*)` grouped by `chunk_key`.
+`(source_id, chunk_key, sentence)` is unique. Adding the same occurrence again updates its kind and context instead of duplicating it, and keeps its `id`. `reextract` and `add --force` delete occurrences they no longer find with `CandidateRepository.remove`, unless the chunk has notes ([0017](../decisions/0017-split-the-cli-into-add-and-sync.md)). Occurrence counts for ranking (R13) are `COUNT(*)` grouped by `chunk_key`, so the same sentence in two sources counts twice.
 
 ### `pushed_notes`
 
@@ -57,7 +57,7 @@ One row per note the tool has pushed to Anki (0012, 0014).
 | Column | Type | Notes |
 |---|---|---|
 | `chunk_key` | TEXT | Part of the primary key |
-| `note_kind` | TEXT | `NoteKind`: `transformation` or `translation`; part of the primary key |
+| `note_kind` | TEXT | `NoteKind`: `transformation`, the only kind since [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md); part of the primary key |
 | `run_id` | TEXT | The sync that pushed it, `run-YYYYMMDD-HHMM` |
 | `pushed_at` | TEXT | |
 
@@ -88,11 +88,24 @@ Progress is tracked per chunk key, not per occurrence, because notes belong to a
 
 | Rows in `pushed_notes` for the key | `ChunkStatus` | Missing note kinds |
 |---|---|---|
-| none | `pending` | both |
-| one | `partial` | the other one |
-| both | `done` | none |
+| none | `pending` | every kind |
+| some kinds | `partial` | the others |
+| every kind | `done` | none |
 
-A chunk with a row in `chunk_errors` keeps its status, so a failed chunk stays `pending` (or `partial`) and the next sync retries it. Anki stays the source of truth for deduplication (R11); `pushed_notes` is the local record and a fast path.
+With one note kind, `transformation` ([0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md)), a chunk is either `pending` or `done`; `partial` stays in the model for a later second kind. A chunk with a row in `chunk_errors` keeps its status, so a failed chunk stays `pending` and the next sync retries it. Anki stays the source of truth for deduplication (R11); `pushed_notes` is the local record and a fast path.
+
+## Pending chunks
+
+`CandidateRepository.pending_chunks()` is the one query selection and `status` start from. It returns one `PendingChunk` per distinct `chunk_key` in `candidates` whose status is not `done`, ordered by key:
+
+| Field | Comes from |
+|---|---|
+| `key` | `candidates.chunk_key` |
+| `kind` | `kind` of the key's oldest candidate row (lowest `id`) |
+| `occurrences` | `COUNT(*)` of the key's rows in `candidates`, over all sources |
+| `missing` | the note kinds with no row in `pushed_notes` for the key |
+
+A row in `pushed_notes` for a key without any candidate row is ignored. During `sync`, the Anki check can only narrow `missing` further: a note kind counts as present if `pushed_notes` or the Anki deck has it ([0033](../decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md)). So a locally done chunk is never sent to Anki, and a note the learner deleted in Anki is not re-created.
 
 ## Migrations
 
@@ -100,6 +113,11 @@ A chunk with a row in `chunk_errors` keeps its status, so a failed chunk stays `
 - `PRAGMA user_version` holds the number of the last migration applied. Opening the database applies every newer file in order, each in its own transaction together with the version bump, so a failed migration leaves the previous version intact.
 - A database with a higher version than the code knows is refused with a message to upgrade.
 - Never edit a migration that has been released. Add the next number instead.
+
+| Migration | What it does |
+|---|---|
+| `0001_initial.sql` | Creates the tables above. |
+| `0002_drop_translation_notes.sql` | Deletes the `pushed_notes` rows of the removed `translation` kind ([0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md)), so stored progress parses and a chunk's status depends on its transformation note alone. Translation notes in Anki are not touched. |
 
 ## Related
 

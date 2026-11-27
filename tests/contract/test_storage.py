@@ -2,6 +2,7 @@
 
 import sqlite3
 from collections.abc import Iterator
+from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from learn_german.domain.models import (
     ChunkKind,
     ChunkStatus,
     NoteKind,
+    PendingChunk,
     RunId,
     Source,
     SourceId,
@@ -127,6 +129,51 @@ def test_sources_find_id_by_ref_or_hash(
     assert result == (source_id if found else None)
 
 
+@pytest.mark.parametrize(
+    ("ref", "content_hash", "found"),
+    [
+        pytest.param("https://example.org/artikel", None, True, id="ref-only"),
+        pytest.param(None, "h1", True, id="hash-only"),
+        pytest.param("https://example.org/neu", None, False, id="unknown-ref-only"),
+        pytest.param(None, None, False, id="neither"),
+    ],
+)
+def test_sources_find_id_with_one_argument(
+    uow: UnitOfWork, ref: str | None, content_hash: str | None, found: bool
+) -> None:
+    source_id = add_source(uow)
+
+    with uow:
+        result = uow.sources.find_id(ref=ref, content_hash=content_hash)
+
+    assert result == (source_id if found else None)
+
+
+def test_sources_replace_keeps_id_and_candidates(uow: UnitOfWork) -> None:
+    source_id = add_source(uow)
+    with uow:
+        uow.candidates.add_all(source_id, [make_candidate()])
+    fresh = replace(make_source(content_hash="h2"), title="Neu", text="Ein neuer Text.")
+
+    with uow:
+        uow.sources.replace(source_id, fresh)
+
+    with uow:
+        assert uow.sources.get(source_id) == fresh
+        assert uow.candidates.for_source(source_id) == [make_candidate()]
+
+
+def test_sources_replace_refuses_another_sources_hash(uow: UnitOfWork) -> None:
+    first = add_source(uow)
+    add_source(uow, make_source("https://example.org/b", "h2"))
+
+    with pytest.raises(DuplicateSourceError, match="another stored source"), uow:
+        uow.sources.replace(first, make_source(content_hash="h2"))
+
+    with uow:
+        assert uow.sources.get(first) == make_source()
+
+
 def test_sources_all_lists_oldest_first(uow: UnitOfWork) -> None:
     first = add_source(uow)
     second = add_source(uow, make_source("https://example.org/b", "h2"))
@@ -150,6 +197,24 @@ def test_candidates_round_trip_in_insertion_order(uow: UnitOfWork) -> None:
 
     with uow:
         assert uow.candidates.for_source(source_id) == candidates
+
+
+def test_candidates_remove_deletes_only_matching_occurrences_of_the_source(
+    uow: UnitOfWork,
+) -> None:
+    first = add_source(uow)
+    second = add_source(uow, make_source("https://example.org/b", "h2"))
+    other = make_candidate(OTHER_KEY, "Sie stellte Geld zur Verfügung.")
+    with uow:
+        uow.candidates.add_all(first, [make_candidate(), other])
+        uow.candidates.add_all(second, [make_candidate()])
+
+    with uow:
+        uow.candidates.remove(first, [make_candidate(context="any context")])
+
+    with uow:
+        assert uow.candidates.for_source(first) == [other]
+        assert uow.candidates.for_source(second) == [make_candidate()]
 
 
 def test_candidates_upsert_same_occurrence_once(uow: UnitOfWork) -> None:
@@ -188,6 +253,58 @@ def test_candidates_for_key_spans_sources(uow: UnitOfWork) -> None:
     assert sentences == ["Die Regierung traf eine Entscheidung.", "Er traf eine Entscheidung."]
 
 
+def test_pending_chunks_of_empty_database_is_empty(uow: UnitOfWork) -> None:
+    with uow:
+        assert uow.candidates.pending_chunks() == []
+
+
+def test_pending_chunks_count_occurrences_across_sources_ordered_by_key(uow: UnitOfWork) -> None:
+    first = add_source(uow)
+    second = add_source(uow, make_source("https://example.org/b", "h2"))
+    with uow:
+        uow.candidates.add_all(first, [make_candidate(OTHER_KEY, "Sie stellte Geld bereit.")])
+        uow.candidates.add_all(first, [make_candidate(), make_candidate(sentence="Wir auch.")])
+        uow.candidates.add_all(second, [make_candidate()])
+
+    with uow:
+        chunks = uow.candidates.pending_chunks()
+
+    assert chunks == [
+        PendingChunk(KEY, ChunkKind.NVV, 3, frozenset(NoteKind)),
+        PendingChunk(OTHER_KEY, ChunkKind.NVV, 1, frozenset(NoteKind)),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("pushed", "missing"),
+    [
+        pytest.param([], set(NoteKind), id="none-pushed"),
+        pytest.param(list(NoteKind), None, id="all-pushed-is-left-out"),
+    ],
+)
+def test_pending_chunks_take_missing_kinds_from_pushed_notes(
+    uow: UnitOfWork, pushed: list[NoteKind], missing: set[NoteKind] | None
+) -> None:
+    source_id = add_source(uow)
+    with uow:
+        uow.candidates.add_all(source_id, [make_candidate()])
+        for kind in pushed:
+            uow.chunk_states.record_pushed(KEY, kind, run_id=RUN, at=DEFAULT_NOW)
+
+    with uow:
+        chunks = uow.candidates.pending_chunks()
+
+    assert [chunk.missing for chunk in chunks] == ([] if missing is None else [missing])
+
+
+def test_pending_chunks_ignore_pushed_notes_without_occurrences(uow: UnitOfWork) -> None:
+    with uow:
+        uow.chunk_states.record_pushed(KEY, NoteKind.TRANSFORMATION, run_id=RUN, at=DEFAULT_NOW)
+
+    with uow:
+        assert uow.candidates.pending_chunks() == []
+
+
 def test_candidates_need_a_stored_source(uow: UnitOfWork) -> None:
     with pytest.raises(DatabaseError, match="undone"), uow:
         uow.candidates.add_all(SourceId(99), [make_candidate()])
@@ -206,9 +323,8 @@ def test_chunk_state_of_unknown_key_is_pending(uow: UnitOfWork) -> None:
 @pytest.mark.parametrize(
     ("kinds", "status"),
     [
-        pytest.param([NoteKind.TRANSLATION], ChunkStatus.PARTIAL, id="one-of-two"),
-        pytest.param(list(NoteKind), ChunkStatus.DONE, id="both"),
-        pytest.param([NoteKind.TRANSLATION] * 2, ChunkStatus.PARTIAL, id="same-kind-twice"),
+        pytest.param(list(NoteKind), ChunkStatus.DONE, id="all"),
+        pytest.param([NoteKind.TRANSFORMATION] * 2, ChunkStatus.DONE, id="same-kind-twice"),
     ],
 )
 def test_chunk_state_tracks_pushed_notes(
@@ -226,7 +342,7 @@ def test_chunk_state_tracks_pushed_notes(
 
 def test_chunk_state_is_per_key(uow: UnitOfWork) -> None:
     with uow:
-        uow.chunk_states.record_pushed(KEY, NoteKind.TRANSLATION, run_id=RUN, at=DEFAULT_NOW)
+        uow.chunk_states.record_pushed(KEY, NoteKind.TRANSFORMATION, run_id=RUN, at=DEFAULT_NOW)
 
     with uow:
         assert uow.chunk_states.get(OTHER_KEY).status is ChunkStatus.PENDING

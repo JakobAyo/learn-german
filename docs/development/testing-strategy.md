@@ -2,7 +2,7 @@
 title: Testing strategy
 summary: Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 status: draft
-updated: 2026-11-25
+updated: 2026-11-27
 ---
 
 # Testing strategy
@@ -17,15 +17,15 @@ States what is tested at which layer and with which doubles, so tests stay fast,
 |---|---|---|---|---|
 | Unit | Domain rules, pure functions, use cases | Fakes from `tests/fakes/` | `tests/unit/` | `test` |
 | Contract | Every implementation of a port and its fake pass one shared suite | None (that is the point) | `tests/contract/` | `test` |
-| Integration | SQLite on a temp file, migrations; HTTP adapters against `httpx.MockTransport` | Mocked transport only | `tests/integration/` | `test` |
+| Integration | SQLite on a temp file, migrations; HTTP adapters against `httpx2.MockTransport` | Mocked transport only | `tests/integration/` | `test` |
 | NLP | Real `de_core_news_lg`: the 0011 key table and the golden corpus | None | `tests/nlp/` (marker `nlp`) | `nlp` |
-| End to end | CLI commands through typer's `CliRunner`, real SQLite, fake LLM and Anki | Fakes injected through `bootstrap` | `tests/e2e/` | `test` |
-| Manual | Real Anki and the real Claude API | None | `development/release-checklist.md` | not in CI |
+| End to end | CLI commands through typer's `CliRunner`, real SQLite, fake LLM, Anki, extractor | Fakes passed as `bootstrap.Overrides` to `create_app` | `tests/e2e/` | `test` |
+| Manual | Real Anki and the real Claude API | None | [Release checklist](release-checklist.md) | not in CI |
 
 ## Rules
 
 - **Fakes over mocks.** Each port has one hand-written fake in `tests/fakes/` (for example `FakeAnkiGateway` holds an in-memory deck). A fake passes the same contract suite as the real adapter, so tests that use it can be trusted. `unittest.mock` is a last resort.
-- **No network.** `pytest-socket` disables sockets for every test. HTTP adapters get an `httpx.MockTransport`.
+- **No network.** `pytest-socket` disables sockets for every test. HTTP adapters get an `httpx2.MockTransport` ([0027](../decisions/0027-settle-shared-dependencies-before-parallel-tracks.md)).
 - **No real home directory or secrets.** An autouse fixture points HOME and the XDG directories at `tmp_path`, runs each test in an empty working directory (so a developer's `.env` is never read) and removes every `LEARN_GERMAN_*` and `ANTHROPIC_*` variable.
 - **Synthetic fixtures only.** German sentences and HTML pages are written by hand for the test. Never paste a real article (R28, 0002).
 - **Deterministic.** Run IDs come from `FixedClock`; ordering ties are broken explicitly; no sleeps.
@@ -40,9 +40,11 @@ States what is tested at which layer and with which doubles, so tests stay fast,
 | Extractor change silently loses NVVs | Golden-corpus precision and recall must not drop below the recorded baseline |
 | Note type fields change without a migration (0003) | Frozen spec test asserts v1 field names and order literally |
 | Prompt changes but the cache serves old output (0004) | Template hash recorded per `PROMPT_VERSION`; a mismatch fails |
-| Duplicate notes on re-run (R11) | E2E: running `sync` twice adds nothing; missing second note is created alone |
+| Duplicate notes on re-run (R11) | E2E: running `sync` twice adds nothing |
 | Progress lost on failure (0014) | E2E: one failing chunk leaves the others pushed and itself pending with its error |
-| Money spent before a fatal error | E2E: Anki unreachable or missing hint language stops before any LLM call |
+| Money spent before a fatal error | E2E: Anki unreachable or missing API key stops before any LLM call |
+| A fetch ignores robots.txt (0013) | Integration test asserts a disallowed article URL is never requested |
+| Re-adding or re-extracting loses note history (0017) | The four reextract rules as one parametrised test; `--force` follows the same rules |
 | A layer imports an adapter | import-linter contracts in CI |
 
 ## Coverage
@@ -51,7 +53,7 @@ Branch coverage with `fail_under = 85` on `src/`, measured by the `test` job. `n
 
 ## Tooling
 
-`pytest`, `pytest-cov`, `pytest-socket`, and `hypothesis` for the key builder only. HTTP is mocked with `httpx.MockTransport`, so no extra mocking library is needed.
+`pytest`, `pytest-cov` and `pytest-socket`. There is no property-based testing library: the key builder is covered by parametrised tables instead. HTTP is mocked with `httpx2.MockTransport`, so no extra mocking library is needed.
 
 ## Related
 

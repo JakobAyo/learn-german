@@ -30,5 +30,31 @@ class DatabaseError(FatalError):
     """The local database cannot be opened, migrated or written."""
 
 
+class NlpModelMissingError(FatalError):
+    """The spaCy model is not installed (0027)."""
+
+
+class AnkiUnavailableError(FatalError):
+    """Anki is not running or AnkiConnect does not answer."""
+
+
+class NoteTypeMismatchError(FatalError):
+    """An existing note type in Anki has different fields from the tool's, so a migration is
+    needed (0003)."""
+
+
 class DuplicateSourceError(ItemError):
     """A source with the same reference or content hash is already stored (R6)."""
+
+
+class SourceFetchError(ItemError):
+    """One source cannot be read or fetched: missing file, bad encoding, blocked or paywalled
+    page, too little text, or no adapter for the reference (R4, 0013)."""
+
+
+class GenerationError(ItemError):
+    """The LLM's output for one chunk is unusable: invalid JSON, schema or sanity check."""
+
+
+class PushError(ItemError):
+    """Anki rejected one note."""

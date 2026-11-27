@@ -2,7 +2,7 @@
 title: Local setup
 summary: Clone, install with uv, enable pre-commit and run make check; what each make target runs and how to install a released version.
 status: active
-updated: 2026-11-24
+updated: 2026-11-26
 ---
 
 # Local setup
@@ -29,6 +29,8 @@ uv run learn-german --version
 
 Secrets go in a git-ignored `.env`; copy `.env.example` and fill in the keys. Tests never need them (R28).
 
+The spaCy model (about 500 MB) is the optional extra `model` ([0027](../decisions/0027-settle-shared-dependencies-before-parallel-tracks.md)). `make check` does not need it. `make test-nlp` installs it on first use (`uv run --extra model`); to use the real extractor otherwise, install it once with `uv sync --extra model`. A later plain `uv sync` removes it again, `uv run` does not.
+
 ## Make targets
 
 | Target | Runs | CI job |
@@ -36,8 +38,9 @@ Secrets go in a git-ignored `.env`; copy `.env.example` and fill in the keys. Te
 | `make lint` | `uv lock --check`, `ruff check`, `ruff format --check` | `lint` |
 | `make types` | `mypy` (strict, `src` and `tests`), `lint-imports` | `types` |
 | `make test` | `pytest -m "not nlp"` with branch coverage, `fail_under = 85` | `test` |
+| `make test-nlp` | `pytest -m nlp` with the `model` extra: the 0011 key table and the golden corpus against the real spaCy model ([NVV extraction](../system-design/nvv-extraction.md)) | `nlp` |
 | `make docs` | `tools/docs/validate_docs.py --docs-root docs` | `docs` |
-| `make check` | all four above | all |
+| `make check` | `lint`, `types`, `test` and `docs`; not `test-nlp`, so no model download | all but `nlp` |
 | `make fmt` | `ruff check --fix`, `ruff format` | none |
 
 pre-commit runs only the fast checks (ruff and the lock check). mypy, import-linter and the tests stay in `make check`, so commits stay quick.
@@ -51,10 +54,15 @@ pre-commit runs only the fast checks (ruff and the lock check). mypy, import-lin
 ## Installing a release
 
 ```bash
-uv tool install git+https://github.com/<owner>/learn-german@v0.1.0
+uv tool install 'learn-german[model] @ git+https://github.com/<owner>/learn-german@v1.0.0'
 ```
 
-From M2 on, add the `model` extra; see [CI and releases](ci-and-releases.md#installing-a-release).
+The `model` extra brings the spaCy model that `add` needs. The [README](../../README.md) covers the rest of a user install (Anki, configuration, workflow); see also [CI and releases](ci-and-releases.md#installing-a-release).
+
+## Debugging
+
+- `learn-german -v <command>` logs each fetch, the extraction counts, the selection, every LLM call and cache hit, and every AnkiConnect action to stderr ([0048](../decisions/0048-log-with-stdlib-logging-behind-a-global-verbose-flag.md)). The option goes before the command.
+- The state is one SQLite file (`~/.local/share/learn-german/learn-german.db` by default); `sqlite3` opens it read-only with `sqlite3 -readonly <path>`. See [Data model](../data/data-model.md).
 
 ## Related
 

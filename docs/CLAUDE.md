@@ -5,7 +5,7 @@ summary: Index of the documentation tree. Start here to find which folder holds 
 
 # learn-german documentation
 
-A personal command-line tool that mines German source material (news articles, local files) for chunks, chiefly Nomen-Verb-Verbindungen, and pushes sentence-transformation and translation-prompt cards into Anki for spaced repetition. Its goal is to move a B2 learner towards C1 by widening the words they actually use and improving how they build sentences, rather than by adding passive word lists.
+A personal command-line tool that mines German source material (news articles, local files) for chunks, chiefly Nomen-Verb-Verbindungen, and pushes sentence-transformation cards into Anki for spaced repetition. Its goal is to move a B2 learner towards C1 by widening the words they actually use and improving how they build sentences, rather than by adding passive word lists.
 
 ## How to use this index
 
@@ -27,7 +27,7 @@ A personal command-line tool that mines German source material (news articles, l
 
 Input sources, frequency lists, known-words store and the extracted-item data model.
 
-- [Data model](data/data-model.md) — SQLite tables, columns and constraints, how chunk status is derived from pushed notes, and how schema migrations are numbered and applied.
+- [Data model](data/data-model.md) — SQLite tables and constraints, how chunk status and pending chunks are derived from candidates and pushed notes, and how migrations are applied.
 
 ### [decisions/](decisions/CLAUDE.md)
 
@@ -58,6 +58,31 @@ Numbered decision records (ADRs). Why the project is the way it is, one decision
 - [Release as features land, not once per milestone](decisions/0023-release-as-features-land.md) — M2 to M6 run as parallel tracks after M1, so 0.x versions count up as features merge and no longer map to milestones; 1.0.0 stays tied to M8.
 - [Read settings with pydantic-settings, layered flag, environment, .env and TOML](decisions/0024-read-settings-with-pydantic-settings.md) — pydantic-settings layers flags, LEARN_GERMAN_ variables, .env and config.toml; unknown TOML keys fail and the hint language is an ISO 639 code.
 - [Track note progress per chunk key, not per occurrence](decisions/0025-track-note-progress-per-chunk-key.md) — Candidates are occurrences without status; pushed notes and errors are stored per chunk key, and pending, partial or done is derived from them.
+- [Run M2, M4, M5 and M6 as parallel tracks with file ownership](decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md) `[superseded]` — Four agents build M2, M4, M5 and M6 at once in worktrees; each track owns fixed files, shared contracts are frozen, and tracks merge into develop.
+- [Settle runtime dependencies up front, httpx2 and the spaCy model extra](decisions/0027-settle-shared-dependencies-before-parallel-tracks.md) — anthropic, httpx2 and spaCy 3.8 are added before the tracks; httpx2 replaces httpx as the SDK uses it; the spaCy model is an optional extra.
+- [Let the LLM supply the citation form of a chunk](decisions/0028-let-the-llm-supply-the-citation-form.md) — The Chunk field comes from the LLM as CardContent.citation_form, not the extractor, because the citation article is not in the parse.
+- [Match NVVs in ranked tiers on the dependency parse, without a noun lexicon](decisions/0029-match-nvvs-in-ranked-tiers-without-a-noun-lexicon.md) — A light verb's NVV is the first non-empty tier of cvc phrase or variant, bare object, last bare PP, other object; no list of NVV nouns is used.
+- [Keep a verb's own separable prefix in the key, and list light verbs by full infinitive](decisions/0030-keep-a-verbs-own-separable-prefix-in-the-key.md) — The verb in a chunk key includes its own separated prefix (nahm Kontakt auf → kontakt|aufnehmen); the light-verb list holds full infinitives such as aufnehmen.
+- [Guard extraction quality with a golden-corpus baseline](decisions/0031-guard-extraction-with-a-golden-corpus-baseline.md) — Hand-written sentences with expected keys are scored for micro-averaged precision and recall; the nlp test fails below the baseline stored next to the corpus.
+- [Feed the cards from the shortest sentence of at least ten words](decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md) — Of a chunk's occurrences, the picker takes the shortest sentence with at least ten words, else the longest; ties go to the most recent occurrence.
+- [Count a note as present if the local record or Anki has it](decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md) — A note kind is needed only if neither pushed_notes nor the Anki deck has it, so locally done chunks skip Anki and a note deleted in Anki stays deleted.
+- [Rank partial chunks first, then by occurrences, ties by key](decisions/0034-rank-partial-chunks-first-then-by-occurrences.md) — OccurrenceRanker puts chunks that already have one note first, then orders by occurrence count, most first, and breaks ties by the chunk key.
+- [Version the card prompt as a template file with a pinned hash](decisions/0035-version-the-card-prompt-as-a-template-with-a-pinned-hash.md) — The card prompt is a template file beside the LLM adapters with a pure renderer; PROMPT_VERSION is in every cache key, and a test pins its hash.
+- [Check card content cheaply, then cache it per request in its own transaction](decisions/0036-check-card-content-then-cache-it-in-its-own-transaction.md) — CheckedProvider turns clearly wrong content into a GenerationError; CachingProvider wraps it, keyed by a request hash, in its own transactions.
+- [Call Claude with a JSON-schema output format and split API errors into fatal and item](decisions/0037-call-claude-with-a-json-schema-and-split-errors-into-fatal-and-item.md) — One Messages call with a JSON-schema output at medium effort, no refusal fallback; rejected access is fatal, failures after retries are item errors.
+- [Create missing note types and check only their fields](decisions/0038-create-missing-note-types-and-check-only-their-fields.md) — ensure_setup creates the deck and missing note types from package template files, fails if an existing type's fields differ, and never edits an existing type.
+- [Read existing keys per note type across the whole collection](decisions/0039-read-existing-keys-per-note-type-across-the-collection.md) — existing_keys counts every note of the tool's note type wherever it is, not only in the deck, so it agrees with Anki's own duplicate check on add.
+- [Add notes one call each, escape field values, and split AnkiConnect errors into fatal and item](decisions/0040-add-notes-one-call-each-and-split-ankiconnect-errors.md) — One addNote call per note so a rejection is attributable, field values HTML-escaped, unreachable or failing setup is fatal, a rejected note is a PushError.
+- [Run the remaining milestones one at a time on branches off develop](decisions/0041-run-the-remaining-milestones-sequentially.md) — With the parallel tracks merged, M3, M7 and M8 are built one after another on branches off develop; file ownership and frozen files no longer apply.
+- [Recognise known sources before fetching, and refresh them in place with --force](decisions/0042-recognise-known-sources-before-fetching-and-refresh-them-in-place.md) — add looks a reference up before fetching and the text after; --force fetches again, overwrites the stored row and updates its candidates by the reextract rules.
+- [Check robots.txt per site and redirect, and require 150 words of article text](decisions/0043-check-robots-txt-per-site-and-redirect-and-require-150-words.md) — robots.txt is read like the standard library does and checked again per redirected site; at most five redirects; under 150 words counts as a paywall.
+- [Normalise source text by paragraph before hashing](decisions/0044-normalise-source-text-by-paragraph-before-hashing.md) — Source text is NFC with blank-line paragraphs and collapsed whitespace; the content hash is its SHA-256, and files are stored by absolute path.
+- [Build the CLI with create_app and stream outcomes per source](decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md) — create_app takes bootstrap Overrides so tests swap plug-ins; use cases yield one outcome per source, printed at once by presenters; exit codes 0, 1 and 2.
+- [Check settings and Anki before selecting, and keep dry runs read-only](decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md) — sync checks hint language and API key while wiring, then sets Anki up before selecting; a dry run only checks Anki answers and writes only the LLM cache.
+- [Push a chunk's notes one call each and save progress per chunk](decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md) — sync adds each note in its own add_notes call and saves pushed notes and errors per chunk; a fatal error keeps what was pushed and prints the summary so far.
+- [Log with stdlib logging behind a global --verbose flag](decisions/0048-log-with-stdlib-logging-behind-a-global-verbose-flag.md) — A global --verbose/-v option turns on DEBUG for the learn_german loggers only, on stderr; third-party loggers stay at WARNING and a filter masks API keys.
+- [Drop the translation card and the hint language](decisions/0049-drop-the-translation-card-and-the-hint-language.md) — Each chunk now gets one transformation note; the translation-prompt note type, the translation field and the hint_language setting are removed.
+- [Show the NVV sentence on the front of the transformation card](decisions/0050-show-the-nvv-sentence-on-the-front-of-the-transformation-card.md) — The transformation card is inverted; the front shows the sentence with the NVV and asks for a verbal rewrite. Only the templates change, not the fields.
 
 ### [development/](development/CLAUDE.md)
 
@@ -66,6 +91,8 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 - [CI and releases](development/ci-and-releases.md) `[draft]` — CI jobs that gate main, repository settings, the Conventional Commits PR-title rule, and how release-please produces versions, tags and CHANGELOG.md.
 - [Coding conventions](development/coding-conventions.md) `[draft]` — Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
 - [Configuration](development/configuration.md) — Every setting with its default, environment variable and TOML key, where config.toml and .env are read from, and the order in which sources override each other.
+- [Parallel tracks](development/parallel-tracks.md) `[deprecated]` — Historical record of how the parallel tracks M2, M4, M5 and M6 were run: file ownership, frozen files, reserved decision numbers, worktree to develop.
+- [Release checklist](development/release-checklist.md) — Manual end-to-end check against real Anki and the real Claude API: fresh install, add, dry run, three notes, no duplicates, rendering, failure paths.
 - [Local setup](development/setup.md) — Clone, install with uv, enable pre-commit and run make check; what each make target runs and how to install a released version.
 - [Testing strategy](development/testing-strategy.md) `[draft]` — Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 
@@ -73,13 +100,14 @@ Local setup, dependencies and NLP models, and how to run the extractor.
 
 External systems: Anki, translation, audio and any LLM; how each is called and fails.
 
-- (empty)
+- [AnkiConnect](integrations/ankiconnect.md) — How the Anki adapter talks to the running Anki app through AnkiConnect: setup, settings, actions used, failure modes, tests and the manual smoke test.
+- [Claude API](integrations/claude-api.md) — How AnthropicProvider calls the Claude API: setup, key, model, request, failures and their messages, cost, caching, logging, tests and the eval script.
 
 ### [learning-design/](learning-design/CLAUDE.md)
 
 Card types, what each trains, Anki deck and note-type layout, review settings.
 
-- [Note types](learning-design/note-types.md) — Deck, the two v1 note types and their fields, card fronts and backs, and tags; fields are hard to change once notes exist.
+- [Note types](learning-design/note-types.md) — Deck, the v1 transformation note type and its fields, card front and back, and tags; fields are hard to change once notes exist.
 
 ### [product/](product/CLAUDE.md)
 
@@ -93,6 +121,8 @@ Learning goals, scope, non-goals and roadmap of the extractor.
 
 Experiments, evaluations and summaries of outside advice that inform decisions.
 
+- [Cost of card generation](research/card-generation-cost.md) — Measured cost of a 50-chunk sync on Opus 5.5, projected cost per card on other Claude models, budget tables, and how to compare models.
+- [Card quality of v1](research/card-quality-v1.md) `[draft]` — Method, rubric and empty results table for measuring how often v1's generated cards are wrong, and how the error rate decides on 0005.
 - [DeepSeek chat: chunks and sentence transformation](research/deepseek-chat-advice.md) — Summary and critique of the DeepSeek advice: mine Nomen-Verb-Verbindungen with spaCy, cloze and transformation cards via genanki.
 
 ### [system-design/](system-design/CLAUDE.md)
@@ -100,6 +130,9 @@ Experiments, evaluations and summaries of outside advice that inform decisions.
 Extraction pipeline: ingest, NLP processing, filtering and ranking, card generation, export.
 
 - [Code architecture](system-design/code-architecture.md) `[draft]` — Ports-and-adapters layout of the Python package, the dependency rule, every port with its v1 adapter and fake, and the patterns used where.
+- [Generation](system-design/generation.md) — How a CardRequest becomes checked, cached CardContent: provider port, versioned prompt, sanity checks, cache decorator and wiring.
+- [Ingest](system-design/ingest.md) — How add, status and reextract work: source adapters, normalising and hashing, polite fetching, duplicate checks, --force, the 0017 rules, output, exit codes.
+- [NVV extraction](system-design/nvv-extraction.md) — How the NVV extractor parses with spaCy, matches light verbs in ranked tiers, builds 0011 keys and context, and how its quality is guarded.
 - [Pipeline](system-design/pipeline.md) — Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 
 <!-- docs-index:end -->

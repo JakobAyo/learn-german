@@ -2,7 +2,7 @@
 title: Roadmap
 summary: Implementation milestones M0 to M8 from an empty repo to v1.0.0, each with deliverables, tests, CI changes and a done-when check.
 status: active
-updated: 2026-11-25
+updated: 2026-11-27
 ---
 
 # Roadmap
@@ -11,6 +11,8 @@ updated: 2026-11-25
 
 Splits v1 (as fixed in [Requirements](requirements.md) and decisions 0002 to 0017) into milestones that each end in a working, tested, released state. Read this to know what to build next and what "done" means for it. How the code is organised is in [Code architecture](../system-design/code-architecture.md); how it is tested is in [Testing strategy](../development/testing-strategy.md); how changes reach `main` and become releases is in [CI and releases](../development/ci-and-releases.md).
 
+The milestones below describe v1 as it was built. After M8, [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md) dropped the translation-prompt note type and the hint language, so where a milestone mentions them, or two notes per chunk, the current tool has one transformation note per chunk and no hint language setting.
+
 ## Rules for every milestone
 
 - **CI first.** M0 builds the quality gates before any feature code, so every later line lands through them.
@@ -18,20 +20,21 @@ Splits v1 (as fixed in [Requirements](requirements.md) and decisions 0002 to 001
 - **Work against ports.** M4, M5 and M6 are built and tested against fakes of their neighbours, so they do not wait for each other.
 - **Release as features land** ([0023](../decisions/0023-release-as-features-land.md)). Feature PRs accumulate in the release PR; merge it when any milestone's done-when check passes. A 0.x version may contain parts of several parallel tracks, so versions do not map to milestones. 1.0.0 is still forced at M8.
 - **Docs and decisions move with the code.** A behaviour change updates its doc; a new choice gets an ADR.
+- **Remaining milestones run one at a time.** M2, M4, M5 and M6 were built at the same time in separate worktrees under the ownership rules in [Parallel tracks](../development/parallel-tracks.md) ([0026](../decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md)). M3, M7 and M8 follow one after another, each on a branch off `develop` ([0041](../decisions/0041-run-the-remaining-milestones-sequentially.md)).
 
 ## Overview
 
 | # | Milestone | Outcome | Release |
 |---|---|---|---|
 | M0 | Foundation and CI/CD | Empty package, all quality gates and the release pipeline proven | 0.1.0 (done) |
-| M1 | Domain, ports, storage, config | Core types, plug-in interfaces, SQLite with migrations, settings | 0.x |
-| M2 | NVV extractor | Text in, correct chunk keys out, guarded by a golden corpus | 0.x |
-| M3 | Ingest, `add`, `status`, `reextract` | **First usable tool**: collect sources and see pending chunks | 0.x |
-| M4 | Selection | Filter chain, occurrence ranker, cap, occurrence picker | 0.x |
-| M5 | Generation | LLM port, Claude adapter, versioned prompt, cache decorator | 0.x |
-| M6 | Anki export | AnkiConnect gateway, v1 note types, note builder, tags | 0.x |
-| M7 | `sync` | **First cards in Anki**: end-to-end run with partial-failure handling and dry run | 0.x |
-| M8 | v1 hardening | README, setup docs, manual release checklist, quality measurement | 1.0.0 |
+| M1 | Domain, ports, storage, config | Core types, plug-in interfaces, SQLite with migrations, settings | 0.2.0 (done) |
+| M2 | NVV extractor | Text in, correct chunk keys out, guarded by a golden corpus | implemented, not yet released |
+| M3 | Ingest, `add`, `status`, `reextract` | **First usable tool**: collect sources and see pending chunks | implemented, not yet released |
+| M4 | Selection | Filter chain, occurrence ranker, cap, occurrence picker | implemented, not yet released |
+| M5 | Generation | LLM port, Claude adapter, versioned prompt, cache decorator | implemented, not yet released |
+| M6 | Anki export | AnkiConnect gateway, v1 note types, note builder, tags | implemented, not yet released |
+| M7 | `sync` | **First cards in Anki**: end-to-end run with partial-failure handling and dry run | implemented, not yet released |
+| M8 | v1 hardening | README, setup docs, manual release checklist, quality measurement | implemented (code and docs); the manual checks, the quality measurement and the 1.0.0 release are pending with the owner |
 
 ```
 M0 ─► M1 ─┬─► M2 ─► M3 ───────────────┐
@@ -108,11 +111,11 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
   - `match`: finds light verb plus noun object or prepositional object on `TokenView`s.
   - `keys`: a pure function from matched `TokenView`s to `ChunkKey`, applying contraction expansion, reflexive `sich`, separable prefixes, and the spelling-variant table.
 - Data files loaded through `importlib.resources`: `light_verbs.txt`, `spelling_variants.tsv`.
-- Citation form for the `Chunk` field (*eine Entscheidung treffen*). If the article cannot be derived reliably from the parse, record that the LLM returns it in M5 instead.
+- ~~Citation form for the `Chunk` field~~: settled before the parallel tracks started; the LLM returns it in M5 ([0028](../decisions/0028-let-the-llm-supply-the-citation-form.md)).
 - Context window: the sentence plus one sentence either side.
 - Extractor registry keyed by name, filled in the composition root.
 
-**Decision to record:** how the spaCy model is installed. Recommendation: an optional extra `model` holding the pinned wheel URL, so `uv tool install 'learn-german[model] @ git+…'` gets everything and fast CI jobs skip the 500 MB download.
+**Decision recorded:** the spaCy model is the optional extra `model` holding the pinned wheel URL ([0027](../decisions/0027-settle-shared-dependencies-before-parallel-tracks.md)), so `uv tool install 'learn-german[model] @ git+…'` gets everything and fast CI jobs skip the 500 MB download.
 
 **Tests**
 
@@ -134,14 +137,14 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 **Deliverables**
 
 - `LocalFileSource`: `.txt`, UTF-8, whitespace normalised, SHA-256 of the normalised text as content hash.
-- `NewsUrlSource`: `httpx` with timeouts and a generic User-Agent, robots.txt checked before the article is fetched, only the given URL, `trafilatura` main-text extraction. 401, 402 and 403 responses and too-short text raise a clear error that points to the `.txt` fallback.
+- `NewsUrlSource`: `httpx2` ([0027](../decisions/0027-settle-shared-dependencies-before-parallel-tracks.md)) with timeouts and a generic User-Agent, robots.txt checked before the article is fetched, only the given URL, `trafilatura` main-text extraction. 401, 402 and 403 responses and too-short text raise a clear error that points to the `.txt` fallback.
 - Adapter selection: each adapter answers `can_handle(ref)`; the first match wins.
 - Use cases: `AddSources` (skip known sources unless `--force`, ingest, extract and store one source per unit of work, per-source report, non-zero exit if any failed), `ShowStatus`, `Reextract` (the four 0017 rules).
 - CLI commands `add` (with `--from`), `status` and `reextract` as thin wrappers; formatting lives in a presenter module.
 
 **Tests**
 
-- News source against `httpx.MockTransport`: robots.txt disallow (the article URL is never requested), 403, paywall-like short text, timeout, success with a synthetic HTML fixture.
+- News source against `httpx2.MockTransport`: robots.txt disallow (the article URL is never requested), 403, paywall-like short text, timeout, success with a synthetic HTML fixture.
 - Local file: empty file, invalid encoding.
 - `AddSources` with fakes: dedupe by URL and by hash, `--force`, one failing source does not stop the rest, exit code.
 - `Reextract`: the four cases (kept, new, vanished pending, vanished with notes) as one parametrised test.
@@ -158,9 +161,9 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 **Deliverables**
 
 - `FilterChain` (composite of `CandidateFilter`s) with the v1 filter `AlreadyInDeckFilter`, which asks the `AnkiGateway` port for existing keys per note type and keeps only the missing note types per chunk.
-- `OccurrenceRanker`: counts occurrences per key in SQL, most frequent first, ties broken deterministically.
+- `OccurrenceRanker`: partial chunks (one of two notes already pushed) first, then most occurrences, ties broken by the chunk key ([0034](../decisions/0034-rank-partial-chunks-first-then-by-occurrences.md)). Occurrences are counted per key in SQL by `CandidateRepository.pending_chunks()`.
 - Cap as a pure function.
-- `OccurrencePicker` strategy that chooses which sentence feeds the cards. This closes the open question in [Pipeline](../system-design/pipeline.md). Recommendation: the shortest sentence within a word range, most recent on ties. Record it as an ADR.
+- `OccurrencePicker` strategy that chooses which sentence feeds the cards. Settled by [0032](../decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md): `ShortestSentencePicker` takes the shortest sentence with at least ten words and no upper bound, else the longest; the most recent occurrence wins ties.
 - `status` reuses the same ranker for its top-pending list.
 
 **Tests:** pure unit tests with a fake gateway: chunk with both notes dropped, chunk with one note keeps only the missing type, ranking ties stable, cap of 0 and cap larger than the candidate count, picker choices.
@@ -175,7 +178,7 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 
 **Deliverables**
 
-- `CardRequest` and `CardContent` types. `CardContent` holds shortened sentence, verbal-style rewrite, translation and meaning (plus citation form if M2 moved it here), validated by a pydantic model at the adapter boundary.
+- `CardRequest` and `CardContent` exist in `domain/models.py` and are frozen while the tracks run ([0026](../decisions/0026-run-m2-m4-m5-m6-as-parallel-tracks.md)). `CardContent` holds citation form, shortened sentence, verbal-style rewrite, translation and meaning, validated by a pydantic model at the adapter boundary.
 - Prompt as a template file plus `PROMPT_VERSION`; rendering is a pure function.
 - `AnthropicProvider`: Anthropic SDK, structured JSON output against the `CardContent` schema, model from config (default `claude-opus-5-5`), SDK retries. Authentication failure maps to `FatalError`; invalid output maps to `ItemError`.
 - `CachingProvider` decorator wrapping any provider, keyed by hash of provider, model, prompt version and canonical request. Every future provider gets caching for free.
@@ -187,7 +190,7 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 
 - Prompt golden file. A second test stores the template's hash per `PROMPT_VERSION` and fails if the template changes without a version bump, which would otherwise serve stale cache entries.
 - Cache decorator: hit, miss, and a key change for each key component.
-- Anthropic adapter against `httpx.MockTransport` (the SDK accepts a custom HTTP client): success, malformed JSON, schema violation, 401, server errors after retries.
+- Anthropic adapter against `httpx2.MockTransport` (the SDK accepts a custom HTTP client): success, malformed JSON, schema violation, 401, server errors after retries.
 - Sanity checks as a parametrised table.
 
 **Done when:** a fake chunk turns into validated `CardContent` through the real adapter with mocked HTTP, and a second identical call makes no HTTP request.
@@ -209,7 +212,7 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 
 **Tests**
 
-- Client against `httpx.MockTransport`: request shape, error field, connection refused.
+- Client against `httpx2.MockTransport`: request shape, error field, connection refused.
 - Gateway contract suite run against the fake, and against the real gateway over a mocked client.
 - Frozen spec test: v1 field names and order are asserted literally, so a field change fails CI until a `-v2` type and migration exist.
 - Note builder and tags as unit tests; card templates as golden files.
@@ -247,6 +250,8 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 
 **Done when:** on the owner's machine, `add` then `sync --cap 3` puts 6 correct notes into Anki, and a repeated `sync` adds nothing.
 
+**Decisions:** [0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md), [0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md).
+
 ---
 
 ## M8. v1 hardening and 1.0.0
@@ -262,6 +267,10 @@ M0 ─► M1 ─┬─► M2 ─► M3 ─────────────�
 - Release 1.0.0 with a `Release-As: 1.0.0` commit footer.
 
 **Done when:** a fresh install by following only the README produces cards, and the release checklist passes.
+
+**Status:** the code and documentation are on `develop`: [README](../../README.md), the global `--verbose` option, error messages reviewed for a next step, [Release checklist](../development/release-checklist.md), the completed [Claude API](../integrations/claude-api.md) page, and the method for the [card quality measurement](../research/card-quality-v1.md). Pending with the owner, in order: run the release checklist, run and record the quality measurement, then open the `develop` → `main` PR with the override block and `Release-As: 1.0.0` footer from [CI and releases](../development/ci-and-releases.md#forcing-100).
+
+**Decisions:** [0048](../decisions/0048-log-with-stdlib-logging-behind-a-global-verbose-flag.md).
 
 ---
 

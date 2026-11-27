@@ -2,7 +2,7 @@
 title: Coding conventions
 summary: Typing, naming, error handling, I/O boundaries, configuration and pull-request rules that every change follows.
 status: draft
-updated: 2026-11-24
+updated: 2026-11-26
 ---
 
 # Coding conventions
@@ -32,6 +32,7 @@ Rules that keep the code consistent and easy to change. Anything a tool can chec
 - Adapters wrap third-party exceptions in a `FatalError` or `ItemError` subclass with `raise … from exc`. See the error model in [Code architecture](../system-design/code-architecture.md#error-model).
 - No bare `except:`, and no `except Exception` outside the CLI's top-level handler.
 - User-facing output goes only through `cli/presenters.py`. Everything else uses `logging` with a module-level logger. No `print` outside `cli/`.
+- Log at the I/O boundaries: DEBUG for each request and its outcome, INFO for what changed (a deck created, words extracted), WARNING for something the user should fix. `--verbose` shows DEBUG and INFO ([0048](../decisions/0048-log-with-stdlib-logging-behind-a-global-verbose-flag.md)). Never log an API key, request headers, request bodies or a whole settings object.
 - Every error message tells the user what to do next (*Start Anki with AnkiConnect enabled*, *Save the article as .txt and run `add file.txt`*).
 
 ## Comments and docstrings
