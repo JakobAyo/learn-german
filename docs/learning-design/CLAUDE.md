@@ -23,6 +23,6 @@ Card types, what each trains, Anki deck and note-type layout, review settings.
 
 ## Contents
 
-- [Note types](note-types.md) — Deck, the two v1 note types and their fields, card fronts and backs, and tags; fields are hard to change once notes exist.
+- [Note types](note-types.md) — Deck, the v1 transformation note type and its fields, card front and back, and tags; fields are hard to change once notes exist.
 
 <!-- docs-index:end -->

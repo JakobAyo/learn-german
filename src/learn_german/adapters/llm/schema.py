@@ -20,7 +20,6 @@ class CardOutput(BaseModel):
     verbal_rewrite: str = Field(
         min_length=1, description="shortened_sentence with the chunk replaced by a verb."
     )
-    translation: str = Field(min_length=1, description="shortened_sentence in the hint language.")
     meaning: str = Field(min_length=1, description="One-line German explanation of the chunk.")
 
     def to_content(self) -> CardContent:
@@ -28,7 +27,6 @@ class CardOutput(BaseModel):
             citation_form=self.citation_form,
             shortened_sentence=self.shortened_sentence,
             verbal_rewrite=self.verbal_rewrite,
-            translation=self.translation,
             meaning=self.meaning,
         )
 

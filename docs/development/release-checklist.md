@@ -1,8 +1,8 @@
 ---
 title: Release checklist
-summary: Manual end-to-end check against real Anki and the real Claude API: fresh install, add, dry run, six notes, no duplicates, rendering, failure paths.
+summary: Manual end-to-end check against real Anki and the real Claude API: fresh install, add, dry run, three notes, no duplicates, rendering, failure paths.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Release checklist
@@ -21,10 +21,10 @@ Record the outcome in the release PR as a ticked copy of the checklist below. A 
   ```bash
   export XDG_CONFIG_HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)"
   cd "$(mktemp -d)"
-  unset ANTHROPIC_API_KEY LEARN_GERMAN_HINT_LANGUAGE
+  unset ANTHROPIC_API_KEY
   ```
 
-- **What to install:** before the release PR is merged there is no tag yet, so install from `main`, which holds everything the release PR will tag. After the tag exists, repeat step 1 with the tag to check the version.
+- **What to install:** before the release there is no tag yet. Until the develop → main PR is merged, the changes to check exist only on `develop`, so install from `develop`; `main` still holds the previous release. Once that PR is merged, install from `main`, which holds everything the release PR will tag. After the tag exists, repeat step 1 with the tag to check the version. `--version` prints the previous version until the release PR bumps it.
 - **A small test text.** Save this hand-written text as `release-check.txt` in the working directory. It holds three clear Nomen-Verb-Verbindungen, so the sync steps have a known size. Do not commit it, and do not use a real article for it.
 
   ```text
@@ -42,15 +42,14 @@ Record the outcome in the release PR as a ticked copy of the checklist below. A 
 ### 1. Fresh install
 
 - [ ] `uv tool uninstall learn-german` (ignore "not installed").
-- [ ] `uv tool install 'learn-german[model] @ git+https://github.com/JakobAyo/learn-german@main'`, or `@vX.Y.Z` once tagged. It installs without errors; the model wheel is part of it.
+- [ ] `uv tool install 'learn-german[model] @ git+https://github.com/JakobAyo/learn-german@develop'` (or `@main` once the develop → main PR is merged, `@vX.Y.Z` once tagged). It installs without errors; the model wheel is part of it.
 - [ ] `learn-german --version` prints the expected version (after tagging: `X.Y.Z`).
 - [ ] `learn-german --help` lists `add`, `status`, `reextract`, `sync` and the options `--verbose`, `--version`.
 - [ ] Every command in the [README](../../README.md) still matches `learn-german <command> --help`.
 
 ### 2. Failure paths before configuration
 
-- [ ] `learn-german sync --dry-run` exits 2 with "No hint language is set", naming the `config.toml` path and `LEARN_GERMAN_HINT_LANGUAGE`.
-- [ ] Write `hint_language = "en"` into `$XDG_CONFIG_HOME/learn-german/config.toml`. `learn-german sync --dry-run` now exits 2 with "ANTHROPIC_API_KEY is not set" and says where to create one.
+- [ ] `learn-german sync --dry-run` exits 2 with "ANTHROPIC_API_KEY is not set" and says where to create one.
 
 ### 3. Add and status
 
@@ -68,26 +67,26 @@ Record the outcome in the release PR as a ticked copy of the checklist below. A 
 ### 5. Dry run
 
 - [ ] Open Anki on the throwaway profile.
-- [ ] `learn-german sync --dry-run --cap 3` prints `Dry run run-...: 3 chunks selected`, a `would add` block with both notes' fields per chunk, and "6 notes would be added". Exit 0.
+- [ ] `learn-german sync --dry-run --cap 3` prints `Dry run run-...: 3 chunks selected`, a `would add` block with the transformation note's fields per chunk, and "3 notes would be added". Exit 0.
 - [ ] Anki is unchanged: no `learn-german::chunks` deck, no `learn-german-*` note types.
-- [ ] Read the previewed fields. Each chunk's citation form, meaning, shortened sentence, verbal rewrite and translation make sense; note anything wrong for the [quality measurement](../research/card-quality-v1.md).
+- [ ] Read the previewed fields. Each chunk's citation form, meaning, shortened sentence and verbal rewrite make sense; note anything wrong for the [quality measurement](../research/card-quality-v1.md).
 
-### 6. Sync: six notes
+### 6. Sync: three notes
 
-- [ ] `learn-german -v sync --cap 3` prints `Run run-...: 3 chunks done, 6 notes added to Anki`, exits 0, and its log shows three "LLM cache hit" lines and no "Calling Claude" line: the dry run's answers were reused.
-- [ ] In Anki, Browse shows exactly 6 notes in `learn-german::chunks`: 3 of `learn-german-transformation-v1`, 3 of `learn-german-translation-v1`, each tagged `learn-german`, `provider::anthropic`, `model::claude-opus-5-5` and the run's `run::` tag.
+- [ ] `learn-german -v sync --cap 3` prints `Run run-...: 3 chunks done, 3 notes added to Anki`, exits 0, and its log shows three "LLM cache hit" lines and no "Calling Claude" line: the dry run's answers were reused.
+- [ ] In Anki, Browse shows exactly 3 notes in `learn-german::chunks`, all of `learn-german-transformation-v1`, each tagged `learn-german`, `provider::anthropic`, `model::claude-opus-5-5` and the run's `run::` tag.
 - [ ] `learn-german status` says no chunks are pending.
 
 ### 7. A repeated sync adds nothing
 
 - [ ] `learn-german sync` prints "Nothing to sync", adds nothing and exits 0.
-- [ ] Anki still has 6 notes.
-- [ ] With a second, empty database, Anki alone prevents duplicates ([0033](../decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md)): `LEARN_GERMAN_DATABASE_PATH="$(mktemp -d)/fresh.db" sh -c 'learn-german add release-check.txt && learn-german sync --cap 3'` prints "Nothing to sync" and Anki still has 6 notes.
+- [ ] Anki still has 3 notes.
+- [ ] With a second, empty database, Anki alone prevents duplicates ([0033](../decisions/0033-count-a-note-as-present-if-the-local-record-or-anki-has-it.md)): `LEARN_GERMAN_DATABASE_PATH="$(mktemp -d)/fresh.db" sh -c 'learn-german add release-check.txt && learn-german sync --cap 3'` prints "Nothing to sync" and Anki still has 3 notes.
 
 ### 8. Card rendering
 
-- [ ] In Anki, preview both cards of one chunk, in light and in night mode. Check fronts, backs, the bold chunk, the italic meaning and that `ChunkKey` shows on neither side, as described in step 3 of the [AnkiConnect smoke test](../integrations/ankiconnect.md#manual-smoke-test). If this release changed `adapters/anki/` or the note types, run that whole smoke test too.
-- [ ] Study one card of each type in the throwaway profile: the answer is a sentence you could produce from the front.
+- [ ] In Anki, preview the card of one chunk, in light and in night mode. Check front, back, the bold chunk, the italic meaning and that `ChunkKey` shows on neither side, as described in step 3 of the [AnkiConnect smoke test](../integrations/ankiconnect.md#manual-smoke-test). If this release changed `adapters/anki/` or the note types, run that whole smoke test too.
+- [ ] Study one card in the throwaway profile: the answer is a sentence you could produce from the front.
 
 ### 9. Real articles and fetch failures
 
@@ -107,7 +106,7 @@ Record the outcome in the release PR as a ticked copy of the checklist below. A 
 
 ## For 1.0.0 only
 
-- [ ] Run `tools/eval/run_eval.py --hint-language en` if the prompt or model changed since the last run, and read its output ([Claude API](../integrations/claude-api.md#manual-evaluation)).
+- [ ] Run `tools/eval/run_eval.py` if the prompt or model changed since the last run, and read its output ([Claude API](../integrations/claude-api.md#manual-evaluation)).
 - [ ] Complete the [card quality measurement](../research/card-quality-v1.md) and act on its outcome.
 - [ ] Open the develop → main PR with the `BEGIN_COMMIT_OVERRIDE` block and the `Release-As: 1.0.0` footer described in [CI and releases](ci-and-releases.md#forcing-100).
 

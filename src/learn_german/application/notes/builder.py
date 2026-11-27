@@ -1,4 +1,4 @@
-"""`NoteBuilder`: one chunk's card content becomes its two notes (0012, 0028).
+"""`NoteBuilder`: one chunk's card content becomes its notes (0012, 0028, 0049).
 
 The field names are the ones in docs/learning-design/note-types.md. The Anki adapter holds
 the same names in its note type specs; a test checks that the two agree.
@@ -22,7 +22,6 @@ CHUNK_FIELD: Final = "Chunk"
 MEANING_FIELD: Final = "Meaning"
 ANSWER_FIELD: Final = "Answer"
 PROMPT_FIELD: Final = "Prompt"
-HINT_LANGUAGE_FIELD: Final = "HintLanguage"
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,9 +44,9 @@ class NoteBuilder:
         content: CardContent,
         kinds: Sequence[NoteKind] = tuple(NoteKind),
     ) -> tuple[NoteDraft, ...]:
-        """The chunk's notes of the given kinds, in the given order; both kinds by default.
+        """The chunk's notes of the given kinds, in the given order; every kind by default.
 
-        `sync` passes the chunk's missing kinds, so a chunk with one note gets only the other.
+        `sync` passes the chunk's missing kinds, so a note already in Anki is not built again.
         """
         return tuple(self._draft(kind, request, content) for kind in kinds)
 
@@ -62,9 +61,4 @@ class NoteBuilder:
         match kind:
             case NoteKind.TRANSFORMATION:
                 extra = ((PROMPT_FIELD, content.verbal_rewrite),)
-            case NoteKind.TRANSLATION:
-                extra = (
-                    (PROMPT_FIELD, content.translation),
-                    (HINT_LANGUAGE_FIELD, request.hint_language),
-                )
         return NoteDraft(note_kind=kind, key=request.key, fields=shared + extra, tags=self.tags)

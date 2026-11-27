@@ -2,7 +2,7 @@
 title: Code architecture
 summary: Ports-and-adapters layout of the Python package, the dependency rule, every port with its v1 adapter and fake, and the patterns used where.
 status: draft
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Code architecture
@@ -70,7 +70,7 @@ src/learn_german/
                          # tokens.py, match.py, keys.py, lexicon.py,
                          # data/light_verbs.txt, data/spelling_variants.tsv
     llm/                 # claude.py (AnthropicProvider), prompt.py (PROMPT_VERSION, renderer),
-                         # schema.py (pydantic output schema), errors.py, prompts/card_v1.md
+                         # schema.py (pydantic output schema), errors.py, prompts/card_v2.md
     anki/                # client.py (AnkiConnectClient), gateway.py (AnkiConnectGateway),
                          # note_types.py (NoteTypeSpec), errors.py, templates/*.html|css
     storage/sqlite/      # database.py, uow.py, repositories.py, migrations/NNNN_*.sql
@@ -121,7 +121,7 @@ Some v1 strategies live in `application/`, not `adapters/`, because they do no I
 
 The ingest use cases (`AddSources`, `ShowStatus`, `Reextract`) are described in [Ingest](ingest.md). `AddSources.run` and `Reextract.run` yield one outcome per source after its unit of work commits, so the CLI prints progress as it happens ([0045](../decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md)).
 
-`SyncService.start(cap, dry_run)` runs the Anki preflight and `ChunkSelector.select`, and returns a `SyncRun`. `SyncRun.chunks()` generates and pushes one chunk at a time and yields a `ChunkOutcome` after the chunk's unit of work commits; `SyncRun.summary()` is the `RunSummary` so far, also after a fatal error ([0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md)). `bootstrap.sync_service(settings, overrides)` checks the hint language and the provider's key, then wires `SyncService` with the provider stack, the Anki gateway, and two selectors: one with `AlreadyInDeckFilter`, and one with an empty `FilterChain` for a dry run without Anki. `Overrides` also takes `provider` (still wrapped in the checks and cache), `anki`, `anki_http_client` for the real gateway over a mock, and `llm_http_client` for the real Claude adapter over a mock.
+`SyncService.start(cap, dry_run)` runs the Anki preflight and `ChunkSelector.select`, and returns a `SyncRun`. `SyncRun.chunks()` generates and pushes one chunk at a time and yields a `ChunkOutcome` after the chunk's unit of work commits; `SyncRun.summary()` is the `RunSummary` so far, also after a fatal error ([0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md)). `bootstrap.sync_service(settings, overrides)` checks the provider's key, then wires `SyncService` with the provider stack, the Anki gateway, and two selectors: one with `AlreadyInDeckFilter`, and one with an empty `FilterChain` for a dry run without Anki. `Overrides` also takes `provider` (still wrapped in the checks and cache), `anki`, `anki_http_client` for the real gateway over a mock, and `llm_http_client` for the real Claude adapter over a mock.
 
 `with uow:` is one transaction: it commits when the block ends normally and rolls back when it raises. Tables and the chunk status are in [Data model](../data/data-model.md).
 
@@ -134,7 +134,7 @@ The ingest use cases (`AddSources`, `ShowStatus`, `Reextract`) are described in 
 | Composite | `FilterChain` | Known-item filters (R14) are appended, and `sync` does not change. |
 | Decorator | `CheckedProvider` and `CachingProvider` around any `LLMProvider`, wired as `CachingProvider(CheckedProvider(provider), uow, clock)` | Sanity checks and caching are written once; DeepSeek or `claude -p` get them for free. Checks sit inside the cache, so content that fails them is never cached ([0036](../decisions/0036-check-card-content-then-cache-it-in-its-own-transaction.md)). |
 | Repository and unit of work | SQLite storage | One transaction per source in `add` and per chunk in `sync` gives the partial-failure rules of [0014](../decisions/0014-keep-progress-when-a-run-fails-partway.md). |
-| Builder | `NoteBuilder` | One `CardContent` becomes two `NoteDraft`s with fields and tags in a single tested place. |
+| Builder | `NoteBuilder` | One `CardContent` becomes a `NoteDraft` per missing note kind (one, the transformation note, since 0049) with fields and tags in a single tested place. |
 | Registry | Name to plug-in maps in `bootstrap`, starting with `extractor_registry()` | A plain dict. No entry points until third-party plug-ins exist. |
 | Composition root | `bootstrap.py` | Constructor injection, no globals, no DI framework. Tests pass `Overrides` to `create_app` ([0045](../decisions/0045-build-the-cli-with-create-app-and-stream-outcomes.md)). |
 | Value object | `ChunkKey`, `RunId` | Validated once at creation, immutable, safe to use as dict keys. |

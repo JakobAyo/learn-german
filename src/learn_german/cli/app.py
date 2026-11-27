@@ -136,7 +136,7 @@ def create_app(overrides: Overrides | None = None) -> typer.Typer:
             typer.Option(
                 "--cap",
                 min=0,
-                help="Most chunks to generate cards for, two notes each. Default: the cap "
+                help="Most chunks to generate cards for, one note each. Default: the cap "
                 "setting, else 10.",
                 show_default=False,
             ),

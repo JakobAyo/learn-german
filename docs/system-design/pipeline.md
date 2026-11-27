@@ -2,7 +2,7 @@
 title: Pipeline
 summary: Stages from source to Anki note, which command (add or sync) owns each, and what each stage reads from and writes to SQLite.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Pipeline
@@ -49,9 +49,8 @@ learn-german sync [--cap N] [--dry-run]
 
 Before anything costs money, in this order; each failure is fatal and exits 2 ([0046](../decisions/0046-check-settings-and-anki-before-selecting-and-keep-dry-runs-read-only.md)):
 
-1. Hint language set (R16), checked while wiring, before the database is opened. A dry run needs it too.
-2. LLM provider known and its API key present, checked when `bootstrap` builds the provider. Nothing is sent yet.
-3. Anki: a real run calls `ensure_setup`, which creates the deck and missing note types and fails on unreachable Anki or mismatched fields. A dry run calls only `check_available`; if Anki does not answer it warns on stderr and selects without the Anki filter.
+1. LLM provider known and its API key present, checked when `bootstrap` builds the provider, before the database is opened. A dry run needs it too. Nothing is sent yet.
+2. Anki: a real run calls `ensure_setup`, which creates the deck and missing note types and fails on unreachable Anki or mismatched fields. A dry run calls only `check_available`; if Anki does not answer it warns on stderr and selects without the Anki filter.
 
 ### Stages
 
@@ -62,8 +61,8 @@ Before anything costs money, in this order; each failure is fatal and exits 2 ([
 | Rank | Ranker (R13) | `OccurrenceRanker`: partial chunks first, then most occurrences across all processed sources, then the chunk key ([0034](../decisions/0034-rank-partial-chunks-first-then-by-occurrences.md)). |
 | Cap | — | Keeps the top N chunks (`--cap`, then environment variable, then 10; R12). N counts chunks, not notes. |
 | Pick | Occurrence picker | `ShortestSentencePicker` chooses the sentence and context that feed the cards: the shortest sentence of at least ten words, else the longest; the most recent on ties ([0032](../decisions/0032-feed-cards-from-the-shortest-sentence-of-ten-words.md)). |
-| Generate | LLM provider (R17) | One call per chunk returns the shortened sentence, verbal-style rewrite, translation and meaning ([0012](../decisions/0012-make-both-cards-practise-the-chunk.md)). Responses are cached in SQLite. |
-| Build | `NoteBuilder` | The chunk's missing note kinds, transformation before translation, tagged `learn-german`, `provider::…`, `model::…` and `run::…` (R22). |
+| Generate | LLM provider (R17) | One call per chunk returns the citation form, shortened sentence, verbal-style rewrite and meaning ([0012](../decisions/0012-make-both-cards-practise-the-chunk.md), [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md)). Responses are cached in SQLite. |
+| Build | `NoteBuilder` | The chunk's missing note kinds (only the transformation note since 0049), tagged `learn-german`, `provider::…`, `model::…` and `run::…` (R22). |
 | Push | AnkiConnect (R19) | One `add_notes` call per note, so the notes added before a rejection are known ([0047](../decisions/0047-push-notes-one-call-each-and-save-progress-per-chunk.md)). |
 | Record | `ChunkStateRepository` | One unit of work per chunk: a `pushed_notes` row per added note with the run ID, and the chunk's error recorded or cleared. |
 
@@ -72,7 +71,7 @@ Before anything costs money, in this order; each failure is fatal and exits 2 ([
 - Generation runs outside any `with uow:` block, because the cache opens its own; the chunk's record block follows the push.
 - In `--dry-run` with Anki unreachable, the selector gets an empty filter chain, so deduplication rests on `pushed_notes` alone.
 - `--dry-run` runs every stage up to push and prints each note's fields instead of pushing (R23). It writes nothing to Anki, not even the deck or note types, and records no pushed notes or errors. Its LLM calls are cached, so a following real `sync` does not pay again.
-- An `ItemError` (unusable LLM output, a call that failed after retries, a rejected note) is recorded for its chunk and the run continues; the chunk stays pending, or partial if its first note went in, and the next sync adds only what is missing from the cached content (R23a, [0014](../decisions/0014-keep-progress-when-a-run-fails-partway.md)).
+- An `ItemError` (unusable LLM output, a call that failed after retries, a rejected note) is recorded for its chunk and the run continues; the chunk stays pending, and the next sync adds only what is missing, from the cached content (R23a, [0014](../decisions/0014-keep-progress-when-a-run-fails-partway.md)).
 - A `FatalError` (Anki gone, the API key rejected, a database failure) stops the run at once. The notes already added for the chunk in hand are recorded, the summary so far is printed and marked as stopped early, and the error goes to stderr.
 
 ### Output and exit codes

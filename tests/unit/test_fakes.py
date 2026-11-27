@@ -36,7 +36,6 @@ def test_fake_anki_gateway_tracks_keys_per_note_kind() -> None:
     gateway.add_notes([_draft()])
 
     assert gateway.existing_keys(NoteKind.TRANSFORMATION) == {KEY}
-    assert gateway.existing_keys(NoteKind.TRANSLATION) == frozenset()
 
 
 def test_fake_anki_gateway_rejects_duplicates_and_can_be_down() -> None:
@@ -52,7 +51,7 @@ def test_fake_anki_gateway_rejects_duplicates_and_can_be_down() -> None:
 def test_fake_provider_records_requests_and_can_fail() -> None:
     fake = FakeProvider()
     provider: LLMProvider = fake
-    request = CardRequest(KEY, ChunkKind.NVV, "Sie traf eine Entscheidung.", "", "en")
+    request = CardRequest(KEY, ChunkKind.NVV, "Sie traf eine Entscheidung.", "")
 
     content = provider.generate(request)
     fake.fail.add(KEY)

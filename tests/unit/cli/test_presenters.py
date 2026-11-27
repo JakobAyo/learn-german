@@ -28,14 +28,13 @@ def test_add_summary_of_only_skipped_sources_does_not_suggest_status() -> None:
 
 
 def test_status_report_marks_partial_chunks_and_handles_no_pending() -> None:
-    partial = PendingChunk(KEY, ChunkKind.NVV, 2, frozenset({NoteKind.TRANSLATION}))
+    partial = PendingChunk(KEY, ChunkKind.NVV, 2, frozenset({NoteKind.TRANSFORMATION}))
     report = StatusReport(1, (), pending=0, partial=1, top_chunks=(partial,))
     done = StatusReport(1, (), pending=0, partial=0, top_chunks=())
 
-    assert "1 chunk pending, 1 of them with one of their two notes." in (
+    assert "1 chunk pending, 1 of them with only some of their notes." in (
         presenters.status_report(report)
     )
-    assert "(needs translation note)" in presenters.status_report(report)
     assert "No chunks pending" in presenters.status_report(done)
 
 

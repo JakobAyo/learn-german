@@ -2,7 +2,7 @@
 title: Data model
 summary: SQLite tables and constraints, how chunk status and pending chunks are derived from candidates and pushed notes, and how migrations are applied.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Data model
@@ -57,7 +57,7 @@ One row per note the tool has pushed to Anki (0012, 0014).
 | Column | Type | Notes |
 |---|---|---|
 | `chunk_key` | TEXT | Part of the primary key |
-| `note_kind` | TEXT | `NoteKind`: `transformation` or `translation`; part of the primary key |
+| `note_kind` | TEXT | `NoteKind`: `transformation`, the only kind since [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md); part of the primary key |
 | `run_id` | TEXT | The sync that pushed it, `run-YYYYMMDD-HHMM` |
 | `pushed_at` | TEXT | |
 
@@ -88,11 +88,11 @@ Progress is tracked per chunk key, not per occurrence, because notes belong to a
 
 | Rows in `pushed_notes` for the key | `ChunkStatus` | Missing note kinds |
 |---|---|---|
-| none | `pending` | both |
-| one | `partial` | the other one |
-| both | `done` | none |
+| none | `pending` | every kind |
+| some kinds | `partial` | the others |
+| every kind | `done` | none |
 
-A chunk with a row in `chunk_errors` keeps its status, so a failed chunk stays `pending` (or `partial`) and the next sync retries it. Anki stays the source of truth for deduplication (R11); `pushed_notes` is the local record and a fast path.
+With one note kind, `transformation` ([0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md)), a chunk is either `pending` or `done`; `partial` stays in the model for a later second kind. A chunk with a row in `chunk_errors` keeps its status, so a failed chunk stays `pending` and the next sync retries it. Anki stays the source of truth for deduplication (R11); `pushed_notes` is the local record and a fast path.
 
 ## Pending chunks
 
@@ -113,6 +113,11 @@ A row in `pushed_notes` for a key without any candidate row is ignored. During `
 - `PRAGMA user_version` holds the number of the last migration applied. Opening the database applies every newer file in order, each in its own transaction together with the version bump, so a failed migration leaves the previous version intact.
 - A database with a higher version than the code knows is refused with a message to upgrade.
 - Never edit a migration that has been released. Add the next number instead.
+
+| Migration | What it does |
+|---|---|
+| `0001_initial.sql` | Creates the tables above. |
+| `0002_drop_translation_notes.sql` | Deletes the `pushed_notes` rows of the removed `translation` kind ([0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md)), so stored progress parses and a chunk's status depends on its transformation note alone. Translation notes in Anki are not touched. |
 
 ## Related
 

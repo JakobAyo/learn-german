@@ -28,7 +28,6 @@ def cache_key(*, provider: str, model: str, prompt_version: str, request: CardRe
             "kind": request.kind.value,
             "sentence": request.sentence,
             "context": request.context,
-            "hint_language": request.hint_language,
         },
     }
     canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))

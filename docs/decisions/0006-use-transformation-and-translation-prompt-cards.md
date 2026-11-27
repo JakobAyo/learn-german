@@ -2,10 +2,12 @@
 title: Use transformation and translation-prompt cards, not chunk cloze
 summary: v1 builds two production card types, sentence transformation and translation prompt, and drops the chunk cloze proposed in the DeepSeek chat.
 status: active
-updated: 2026-11-24
+updated: 2026-11-27
 ---
 
 # Use transformation and translation-prompt cards, not chunk cloze
+
+> **Amended by [0049](0049-drop-the-translation-card-and-the-hint-language.md)** (2026-11-27). The translation-prompt card is dropped; v1 builds only the sentence-transformation card. Dropping the chunk cloze still holds.
 
 ## Context
 

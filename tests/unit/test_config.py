@@ -52,7 +52,6 @@ def test_settings_defaults(toml_file: Path, env_file: Path) -> None:
     settings = load_settings(config_file=toml_file, env_file=env_file)
 
     assert settings.model_dump() == {
-        "hint_language": None,
         "cap": 10,
         "provider": "anthropic",
         "model": "claude-opus-5-5",
@@ -74,9 +73,9 @@ def test_settings_paths_follow_xdg(isolated_home: Path) -> None:
 
 def test_settings_read_default_config_file() -> None:
     config_dir().mkdir(parents=True)
-    default_config_file().write_text('hint_language = "en"\n', encoding="utf-8")
+    default_config_file().write_text('deck = "Test::Deck"\n', encoding="utf-8")
 
-    assert load_settings().hint_language == "en"
+    assert load_settings().deck == "Test::Deck"
 
 
 def test_settings_read_dotenv_from_working_directory() -> None:
@@ -122,32 +121,23 @@ def test_settings_api_key_is_hidden_in_repr(monkeypatch: pytest.MonkeyPatch) -> 
     assert "sk-secret" not in repr(load_settings())
 
 
-def test_settings_hint_language_is_optional_until_required() -> None:
-    settings = load_settings()
-
-    with pytest.raises(ConfigError, match="hint_language"):
-        settings.require_hint_language()
-
-
-def test_settings_treat_empty_hint_language_as_unset(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "")
-
-    assert load_settings().hint_language is None
-
-
-def test_settings_require_hint_language_returns_it(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_settings_ignore_the_dropped_hint_language_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "en")
 
-    assert load_settings().require_hint_language() == "en"
+    assert "hint_language" not in load_settings().model_dump()
 
 
 @pytest.mark.parametrize(
     ("content", "message"),
     [
-        pytest.param('hint_language = "English"\n', "hint_language", id="hint-not-a-code"),
+        pytest.param(
+            'hint_language = "en"\n', "unknown settings: hint_language", id="dropped-by-0049"
+        ),
         pytest.param("cap = -1\n", "cap", id="negative-cap"),
         pytest.param('cap = "many"\n', "cap", id="cap-not-a-number"),
-        pytest.param('hint_langauge = "en"\n', "unknown settings: hint_langauge", id="typo"),
+        pytest.param('modle = "x"\n', "unknown settings: modle", id="typo"),
         pytest.param("cap = \n", "not valid TOML", id="broken-toml"),
     ],
 )

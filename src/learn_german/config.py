@@ -53,11 +53,6 @@ class Settings(BaseSettings):
         frozen=True,
     )
 
-    hint_language: str | None = Field(
-        default=None,
-        pattern=r"^[a-z]{2,3}$",
-        description="ISO 639 code of the language for translation prompts, e.g. en. No default.",
-    )
     cap: int = Field(default=10, ge=0, description="Most new chunks per sync (0015).")
     provider: str = Field(default="anthropic", min_length=1, description="LLM provider.")
     model: str = Field(default="claude-opus-5-5", min_length=1, description="LLM model ID.")
@@ -76,12 +71,6 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("anthropic_api_key", "ANTHROPIC_API_KEY"),
         description="Claude API key. Prefer the environment or .env over config.toml.",
     )
-
-    @field_validator("hint_language", mode="before")
-    @classmethod
-    def _empty_means_unset(cls, value: object) -> object:
-        # `LEARN_GERMAN_HINT_LANGUAGE=` must not stop add and status, which never need it.
-        return None if isinstance(value, str) and not value.strip() else value
 
     @field_validator("database_path")
     @classmethod
@@ -108,16 +97,6 @@ class Settings(BaseSettings):
                 f"{', '.join(cls.model_fields)}."
             )
         return (init_settings, env_settings, dotenv_settings, toml_settings)
-
-    def require_hint_language(self) -> str:
-        """The hint language. Raises `ConfigError` if unset, since generation needs it (R16)."""
-        if self.hint_language is None:
-            raise ConfigError(
-                "No hint language is set, and card generation needs one. Add "
-                f'hint_language = "en" to {default_config_file()} or set '
-                f"{ENV_PREFIX}HINT_LANGUAGE."
-            )
-        return self.hint_language
 
     def require_anthropic_api_key(self) -> str:
         """The Claude API key. Raises `MissingCredentialsError` if unset."""

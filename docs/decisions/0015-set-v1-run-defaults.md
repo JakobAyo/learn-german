@@ -2,10 +2,12 @@
 title: Set v1 run defaults, Claude Opus 5.5, ten chunks, required hint language
 summary: The default model is Claude Opus 5.5, the default cap is 10 chunks per run, and there is no default hint language; the user must set one.
 status: active
-updated: 2026-11-24
+updated: 2026-11-27
 ---
 
 # Set v1 run defaults, Claude Opus 5.5, ten chunks, required hint language
+
+> **Amended by [0049](0049-drop-the-translation-card-and-the-hint-language.md)** (2026-11-27). The hint language setting no longer exists, so there is nothing to set. The default model and the default cap still hold.
 
 ## Context
 

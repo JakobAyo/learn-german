@@ -279,8 +279,7 @@ def test_pending_chunks_count_occurrences_across_sources_ordered_by_key(uow: Uni
     ("pushed", "missing"),
     [
         pytest.param([], set(NoteKind), id="none-pushed"),
-        pytest.param([NoteKind.TRANSLATION], {NoteKind.TRANSFORMATION}, id="one-pushed"),
-        pytest.param(list(NoteKind), None, id="both-pushed-is-left-out"),
+        pytest.param(list(NoteKind), None, id="all-pushed-is-left-out"),
     ],
 )
 def test_pending_chunks_take_missing_kinds_from_pushed_notes(
@@ -300,7 +299,7 @@ def test_pending_chunks_take_missing_kinds_from_pushed_notes(
 
 def test_pending_chunks_ignore_pushed_notes_without_occurrences(uow: UnitOfWork) -> None:
     with uow:
-        uow.chunk_states.record_pushed(KEY, NoteKind.TRANSLATION, run_id=RUN, at=DEFAULT_NOW)
+        uow.chunk_states.record_pushed(KEY, NoteKind.TRANSFORMATION, run_id=RUN, at=DEFAULT_NOW)
 
     with uow:
         assert uow.candidates.pending_chunks() == []
@@ -324,9 +323,8 @@ def test_chunk_state_of_unknown_key_is_pending(uow: UnitOfWork) -> None:
 @pytest.mark.parametrize(
     ("kinds", "status"),
     [
-        pytest.param([NoteKind.TRANSLATION], ChunkStatus.PARTIAL, id="one-of-two"),
-        pytest.param(list(NoteKind), ChunkStatus.DONE, id="both"),
-        pytest.param([NoteKind.TRANSLATION] * 2, ChunkStatus.PARTIAL, id="same-kind-twice"),
+        pytest.param(list(NoteKind), ChunkStatus.DONE, id="all"),
+        pytest.param([NoteKind.TRANSFORMATION] * 2, ChunkStatus.DONE, id="same-kind-twice"),
     ],
 )
 def test_chunk_state_tracks_pushed_notes(
@@ -344,7 +342,7 @@ def test_chunk_state_tracks_pushed_notes(
 
 def test_chunk_state_is_per_key(uow: UnitOfWork) -> None:
     with uow:
-        uow.chunk_states.record_pushed(KEY, NoteKind.TRANSLATION, run_id=RUN, at=DEFAULT_NOW)
+        uow.chunk_states.record_pushed(KEY, NoteKind.TRANSFORMATION, run_id=RUN, at=DEFAULT_NOW)
 
     with uow:
         assert uow.chunk_states.get(OTHER_KEY).status is ChunkStatus.PENDING

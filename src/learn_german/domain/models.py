@@ -27,14 +27,17 @@ class SourceKind(StrEnum):
 
 
 class NoteKind(StrEnum):
-    """The two notes every chunk gets (0012). Anki note-type names are an adapter detail."""
+    """The notes every chunk gets: one transformation note (0012, 0049). Anki note-type
+    names are an adapter detail."""
 
     TRANSFORMATION = "transformation"
-    TRANSLATION = "translation"
 
 
 class ChunkStatus(StrEnum):
-    """How far a chunk has got into Anki. 0014 needs none, one of two, and both told apart."""
+    """How far a chunk has got into Anki: none, some or all of its note kinds (0014).
+
+    With one note kind (0049) a chunk is never partial; the state stays for later kinds.
+    """
 
     PENDING = "pending"
     PARTIAL = "partial"
@@ -250,23 +253,21 @@ class CardRequest:
     kind: ChunkKind
     sentence: str
     context: str
-    hint_language: str
 
 
 @dataclass(frozen=True, slots=True)
 class CardContent:
-    """Validated LLM output for one chunk, enough to build both notes (0012).
+    """Validated LLM output for one chunk, enough to build its note (0012, 0049).
 
     Each field fills one note field (see docs/learning-design/note-types.md):
     `citation_form` -> `Chunk` (0028), `shortened_sentence` -> `Answer`,
-    `verbal_rewrite` -> transformation `Prompt`, `translation` -> translation `Prompt`,
-    `meaning` -> `Meaning`. Shared by M5 and M6, so changed only by ADR.
+    `verbal_rewrite` -> `Prompt`, `meaning` -> `Meaning`. Shared by M5 and M6, so changed
+    only by ADR.
     """
 
     citation_form: str
     shortened_sentence: str
     verbal_rewrite: str
-    translation: str
     meaning: str
 
 

@@ -2,7 +2,7 @@
 
 `start` checks Anki and selects the chunks before any money is spent; the returned `SyncRun`
 then generates and pushes one chunk at a time, yielding an outcome per chunk. Settings the
-run needs (hint language, API key) are checked by the composition root before this exists.
+run needs (the API key) are checked by the composition root before this exists.
 """
 
 import logging
@@ -99,7 +99,7 @@ class SyncRun:
 
     def _sync_chunk(self, selected: SelectedChunk) -> ChunkOutcome:
         services = self._services
-        request = selected.card_request(services.hint_language)
+        request = selected.card_request()
         kinds = tuple(kind for kind in NoteKind if kind in selected.chunk.missing)
         logger.debug("%s needs %s", request.key, ", ".join(kinds))
         pushed: list[NoteDraft] = []
@@ -164,7 +164,6 @@ class SyncService:
         selector: ChunkSelector,
         offline_selector: ChunkSelector,
         clock: Clock,
-        hint_language: str,
     ) -> None:
         self.uow = uow
         self.gateway = gateway
@@ -172,7 +171,6 @@ class SyncService:
         self.selector = selector
         self.offline_selector = offline_selector
         self.clock = clock
-        self.hint_language = hint_language
 
     def start(self, *, cap: int, dry_run: bool) -> SyncRun:
         """Check Anki, then select up to `cap` chunks. Nothing is generated yet.

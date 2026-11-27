@@ -2,7 +2,7 @@
 title: Requirements
 summary: Functional and non-functional requirements, scope, non-goals and deferred features, agreed before implementation starts.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Requirements
@@ -35,19 +35,19 @@ States what the extractor must do and the constraints it must respect, so that t
 
 ## Selection
 
-- **R11. Deduplication by chunk key.** A note is created only if no note of the same note type in the tool's deck has that lemma key, so a re-run or a new article never creates a second note for the same chunk, and a chunk missing one of its two notes gets just that note. ([0009](../decisions/0009-deduplicate-by-chunk-key-and-cap-new-notes-per-run.md), [0012](../decisions/0012-make-both-cards-practise-the-chunk.md))
-- **R12. Per-run cap.** The maximum number of new chunks per `sync` (each producing two notes) is configurable through the `--cap` flag, overriding an environment variable, overriding a default of 10. The cap also bounds LLM cost; there is no separate spending limit. ([0015](../decisions/0015-set-v1-run-defaults.md))
+- **R11. Deduplication by chunk key.** A note is created only if no note of the same note type in the tool's deck has that lemma key, so a re-run or a new article never creates a second note for the same chunk, and a chunk missing some of its notes gets just those. ([0009](../decisions/0009-deduplicate-by-chunk-key-and-cap-new-notes-per-run.md), [0012](../decisions/0012-make-both-cards-practise-the-chunk.md))
+- **R12. Per-run cap.** The maximum number of new chunks per `sync` (each producing one note) is configurable through the `--cap` flag, overriding an environment variable, overriding a default of 10. The cap also bounds LLM cost; there is no separate spending limit. ([0015](../decisions/0015-set-v1-run-defaults.md))
 - **R13. Ranking.** When candidates exceed the cap, the highest ranked go first. v1 ranks by how often a chunk occurs across the learner's own processed sources (counted from the local database), most frequent first. No external frequency list or curated NVV list is used. The ranker is pluggable, so such lists can be added later as extra signals if the results disappoint.
 - **R14. Known-item filtering is deferred.** v1 does not filter out chunks the learner already knows, apart from R11. The pipeline keeps a filter stage between extraction and ranking, so a filter can be added later (from the Anki collection, a local known list or a frequency cut-off) without restructuring.
 
 ## Card generation
 
-- **R15. Card types.** v1 produces two production card types, one note of each per chunk; chunk cloze is not built. Both are built on the source sentence shortened by the LLM to the clause around the chunk. ([0006](../decisions/0006-use-transformation-and-translation-prompt-cards.md), [0012](../decisions/0012-make-both-cards-practise-the-chunk.md))
-  - **Transformation:** given the sentence rewritten in verbal style, produce the nominal-style sentence with the NVV. Where no direct verb exists, the front uses the closest paraphrase. Syntax rewrites (participial attribute, relative clause) are not in v1.
-  - **Translation prompt:** given the sentence in the hint language and the chunk to use, produce the German sentence.
-  - Both backs show a one-line German meaning of the chunk. Fields and layout are in [Note types](../learning-design/note-types.md).
-- **R16. Required hint language.** The language of translations and hints is a setting with no default; generation refuses to run until it is set. ([0015](../decisions/0015-set-v1-run-defaults.md))
-- **R17. LLM behind an interface.** Generated content (model answers, translations) comes from an LLM provider interface. The Claude API is the first adapter, with `claude-opus-5-5` as the default model. A headless `claude -p` adapter for testing and a DeepSeek adapter can be added without touching callers. ([0004](../decisions/0004-generate-card-content-through-a-pluggable-llm-provider.md))
+- **R15. Card types.** v1 produces one production card type, one note per chunk; chunk cloze is not built. It is built on the source sentence shortened by the LLM to the clause around the chunk. ([0006](../decisions/0006-use-transformation-and-translation-prompt-cards.md), [0012](../decisions/0012-make-both-cards-practise-the-chunk.md), [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md))
+  - **Transformation:** given the sentence with the NVV, rewrite it in verbal style without the NVV ([0050](../decisions/0050-show-the-nvv-sentence-on-the-front-of-the-transformation-card.md) inverted the original direction). Where no direct verb exists, the model answer uses the closest paraphrase. Syntax rewrites (participial attribute, relative clause) are not in v1.
+  - **Translation prompt:** dropped by [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md). It doubled the cards per chunk without training anything the transformation card does not.
+  - The back shows a one-line German meaning of the chunk. Fields and layout are in [Note types](../learning-design/note-types.md).
+- **R16. Required hint language.** Dropped by [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md): only the translation prompt used a hint language, so there is no such setting. ([0015](../decisions/0015-set-v1-run-defaults.md))
+- **R17. LLM behind an interface.** Generated content (model answers, verbal rewrites, meanings) comes from an LLM provider interface. The Claude API is the first adapter, with `claude-opus-5-5` as the default model. A headless `claude -p` adapter for testing and a DeepSeek adapter can be added without touching callers. ([0004](../decisions/0004-generate-card-content-through-a-pluggable-llm-provider.md))
 - **R18. No audio in v1.** Text-to-speech is out of scope; if added, it goes behind its own provider interface.
 
 ## Anki export

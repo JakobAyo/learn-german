@@ -28,12 +28,12 @@ def _key(provider: LLMProvider, req: CardRequest = REQUEST) -> str:
 def test_cache_key_is_stable() -> None:
     # Pinned: a change to the canonical form silently drops every cached answer.
     pinned = CardRequest(
-        ChunkKey("verfügung|zu|stellen"), ChunkKind.NVV, "Sie stellt Geld zur Verfügung.", "", "en"
+        ChunkKey("verfügung|zu|stellen"), ChunkKind.NVV, "Sie stellt Geld zur Verfügung.", ""
     )
 
     key = cache_key(provider="anthropic", model="m", prompt_version="v1", request=pinned)
 
-    assert key == "ba07b5cf9ac48bedb2c94f5f926f32c209533eda82070f607b9faa48db68c57c"
+    assert key == "f4d4497f6f607ebe1016c4eac7c91447931665ee153f5b5cc5c78182422da913"
 
 
 @pytest.mark.parametrize(
@@ -45,7 +45,6 @@ def test_cache_key_is_stable() -> None:
         pytest.param({"request": request(key=ChunkKey("rolle|spielen"))}, id="chunk-key"),
         pytest.param({"request": request(sentence="Ein anderer Satz.")}, id="sentence"),
         pytest.param({"request": request(context="Anderer Kontext.")}, id="context"),
-        pytest.param({"request": request(hint_language="fr")}, id="hint-language"),
     ],
 )
 def test_cache_key_changes_with_each_component(changes: dict[str, object]) -> None:
@@ -115,7 +114,6 @@ def test_provider_identity_change_is_a_miss(
     [
         pytest.param(request(sentence="Der Rat traf eine Entscheidung."), id="sentence"),
         pytest.param(request(context="Anderer Kontext."), id="context"),
-        pytest.param(request(hint_language="fr"), id="hint-language"),
         pytest.param(request(key=ChunkKey("beschluss|fassen")), id="chunk-key"),
     ],
 )

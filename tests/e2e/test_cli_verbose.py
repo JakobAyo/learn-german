@@ -33,7 +33,6 @@ runner = CliRunner()
 
 @pytest.fixture(autouse=True)
 def settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LEARN_GERMAN_HINT_LANGUAGE", "en")
     monkeypatch.setenv("ANTHROPIC_API_KEY", API_KEY)
 
 

@@ -11,10 +11,9 @@ fixed phrase a native speaker would use, and building the sentence around it wit
 mistakes. Word lists train recognition. This tool trains production instead:
 
 - It mines the texts you actually read, so the chunks are the ones you meet.
-- For every chunk it writes two Anki notes on a shortened sentence from the text: a
-  **transformation** card (rewrite a plain verbal sentence in nominal style with the chunk)
-  and a **translation** card (say a sentence in your hint language in German, using the
-  chunk).
+- For every chunk it writes one Anki note on a shortened sentence from the text: a
+  **transformation** card that asks you to rewrite a plain verbal sentence in nominal
+  style, using the chunk.
 - The card text comes from the Claude API. There is no review step: notes go straight into
   Anki, tagged so a bad batch can be found and deleted. `sync --dry-run` previews a run.
 
@@ -52,23 +51,13 @@ with an error that says how to install it.
    `http://127.0.0.1:8765`, and its `apiKey` must stay `null`.
 4. Keep Anki open, with no dialog showing, while `sync` runs.
 
-On the first `sync`, the tool creates the deck `learn-german::chunks` and two note types,
-`learn-german-transformation-v1` and `learn-german-translation-v1`. You may restyle the
-cards in Anki, but do not rename or reorder the note types' fields: the tool stops if they
-differ from what it expects.
+On the first `sync`, the tool creates the deck `learn-german::chunks` and the note type
+`learn-german-transformation-v1`. You may restyle the card in Anki, but do not rename or
+reorder the note type's fields: the tool stops if they differ from what it expects.
 
 ## Configure
 
-Two settings are needed before `sync` can run: the hint language and the API key.
-
-**Hint language.** The ISO 639 code of the language your translation cards are written
-in, for example `en`. There is no default. Put it in the config file, which on Linux is
-`~/.config/learn-german/config.toml` (on macOS
-`~/Library/Application Support/learn-german/config.toml`):
-
-```toml
-hint_language = "en"
-```
+One setting is needed before `sync` can run: the API key.
 
 **API key.** Set `ANTHROPIC_API_KEY` in your environment, or put it in a `.env` file in the
 directory you run `learn-german` from:
@@ -81,12 +70,13 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 Do not put the key in `config.toml`, and never commit a `.env` file.
 
-**Other settings** have defaults and rarely need changing. Each can go in `config.toml`,
-in `.env`, or in an environment variable:
+**Other settings** have defaults and rarely need changing. Each can go in the config file
+(on Linux `~/.config/learn-german/config.toml`, on macOS
+`~/Library/Application Support/learn-german/config.toml`), in `.env`, or in an environment
+variable:
 
 | `config.toml` key | Environment variable | Default |
 |---|---|---|
-| `hint_language` | `LEARN_GERMAN_HINT_LANGUAGE` | none, required for `sync` |
 | `cap` | `LEARN_GERMAN_CAP` | `10` chunks per `sync` |
 | `model` | `LEARN_GERMAN_MODEL` | `claude-opus-5-5` |
 | `deck` | `LEARN_GERMAN_DECK` | `learn-german::chunks` |
@@ -142,12 +132,12 @@ closed; it then only warns that it cannot check which notes Anki already has.
 Then add the notes:
 
 ```bash
-learn-german sync --cap 3      # 3 chunks, so 6 notes
+learn-german sync --cap 3      # 3 chunks, so 3 notes
 learn-german sync              # up to the cap setting, 10 chunks by default
 ```
 
 `sync` takes the pending chunks that occur most often in your sources, skips any chunk
-whose notes are already in Anki, generates the card text, and adds two notes per chunk.
+whose notes are already in Anki, generates the card text, and adds one note per chunk.
 Each note is tagged `learn-german`, `provider::anthropic`, `model::<model>` and
 `run::run-YYYYMMDD-HHMM`; to remove a bad batch, search for its `run::` tag in Anki's
 browser and delete the notes. Running `sync` again adds only what is still missing, so
@@ -194,8 +184,9 @@ tool from scratch; `sync` then skips every chunk Anki already has.
   enabled, and that `anki_connect_url` matches its address.
 - **"AnkiConnect … did not answer … in time"**: close any open dialog in Anki and run the
   command again.
-- **"No hint language is set"** or **"ANTHROPIC_API_KEY is not set"**: see
-  [Configure](#configure).
+- **"ANTHROPIC_API_KEY is not set"**: see [Configure](#configure).
+- **"… has unknown settings: hint_language"**: earlier versions also made translation
+  cards and needed a hint language. Delete the `hint_language` line from `config.toml`.
 - **"The spaCy model de_core_news_lg is not installed"**: install again with the `model`
   extra, as shown in [Install](#install).
 - Anything else: run the command again with `-v` and read the log lines before the error.

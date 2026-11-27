@@ -1,15 +1,15 @@
 ---
 title: Note types
-summary: Deck, the two v1 note types and their fields, card fronts and backs, and tags; fields are hard to change once notes exist.
+summary: Deck, the v1 transformation note type and its fields, card front and back, and tags; fields are hard to change once notes exist.
 status: active
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Note types
 
 ## Purpose
 
-Defines what v1 puts into Anki: the deck, the two note types, their fields and what each card shows. Changing a field after notes exist needs a migration (see [0003](../decisions/0003-push-notes-live-through-ankiconnect.md)), so read this before touching the export or the generation prompt. The content rules come from [0012](../decisions/0012-make-both-cards-practise-the-chunk.md).
+Defines what v1 puts into Anki: the deck, the note type, its fields and what the card shows. Changing a field after notes exist needs a migration (see [0003](../decisions/0003-push-notes-live-through-ankiconnect.md)), so read this before touching the export or the generation prompt. The content rules come from [0012](../decisions/0012-make-both-cards-practise-the-chunk.md). Each chunk gets one note, of the transformation type; the translation-prompt type `learn-german-translation-v1` was dropped by [0049](../decisions/0049-drop-the-translation-card-and-the-hint-language.md), and the tool no longer creates, reads or counts its notes.
 
 ## Deck
 
@@ -17,9 +17,9 @@ Defines what v1 puts into Anki: the deck, the two note types, their fields and w
 
 A note of the tool's note type counts as present wherever it is, so a note moved to another deck is not pushed again ([0039](../decisions/0039-read-existing-keys-per-note-type-across-the-collection.md)).
 
-## Shared fields
+## Base fields
 
-Both note types start with the same fields, in this order. `ChunkKey` is first because Anki checks duplicates on the first field within a note type.
+The note type starts with these fields, in this order, followed by the fields of its card below. They are kept separate so that a later card type can share them. `ChunkKey` is first because Anki checks duplicates on the first field within a note type.
 
 | Field | Example | Source |
 |---|---|---|
@@ -32,10 +32,10 @@ Both note types start with the same fields, in this order. `ChunkKey` is first b
 
 ## Cards
 
-Each note type has one card type, named `Transformation` and `Translation`. The templates and the shared stylesheet are files in `src/learn_german/adapters/anki/templates/`; their rendering is pinned by golden files in `tests/data/anki/`.
+The note type has one card type, named `Transformation`. The templates and the shared stylesheet are files in `src/learn_german/adapters/anki/templates/`; their rendering is pinned by golden files in `tests/data/anki/`.
 
-- The back of both starts with the front, then a line (`{{FrontSide}}` and `<hr id="answer">`), so the model answer stands under the prompt.
-- German text carries `lang="de"`; the translation prompt carries `lang="{{HintLanguage}}"`.
+- The back starts with the front, then a line (`{{FrontSide}}` and `<hr id="answer">`), so the model answer stands under the prompt.
+- All text is German and carries `lang="de"`.
 - The chunk is bold, the meaning italic and smaller. Night mode has its own colours.
 
 `ensure_setup` creates a missing note type but never edits an existing one, so the cards can be restyled in Anki ([0038](../decisions/0038-create-missing-note-types-and-check-only-their-fields.md)).
@@ -48,24 +48,12 @@ Extra field:
 |---|---|
 | `Prompt` | Die Regierung hat entschieden, die Steuer zu senken. |
 
-- **Front:** "Rewrite in nominal style, using an NVV:" followed by `Prompt`.
-- **Back:** the front, then `Answer`, then `Chunk` and `Meaning`.
+- **Front:** "Rewrite in verbal style, without the NVV:" followed by `Answer`, the sentence with the NVV.
+- **Back:** the front, then `Prompt`, the verbal-style sentence, then `Chunk` and `Meaning`.
+
+The direction was inverted by [0050](../decisions/0050-show-the-nvv-sentence-on-the-front-of-the-transformation-card.md). The field names still describe the original direction (verbal prompt, nominal answer); only the templates swap them, so the fields and existing notes are unchanged. A collection created before 0050 keeps the old templates until they are replaced once in Anki.
 
 When the NVV has no direct verb, `Prompt` uses the closest plain paraphrase (*wirksam werden* for *in Kraft treten*).
-
-## Translation-prompt note type: `learn-german-translation-v1`
-
-Extra fields:
-
-| Field | Example |
-|---|---|
-| `Prompt` | The government made the decision to lower the tax. |
-| `HintLanguage` | en |
-
-- **Front:** `Prompt`, then "Use: " followed by `Chunk`.
-- **Back:** the front, then `Answer`, then `Meaning`.
-
-`HintLanguage` records which language the prompt is in, so a later change of the setting can be told apart from old notes.
 
 ## Tags
 
@@ -89,4 +77,5 @@ The v1 field names and order are asserted literally in `tests/unit/notes/test_no
 - [Requirements](../product/requirements.md)
 - [0006 Card types](../decisions/0006-use-transformation-and-translation-prompt-cards.md)
 - [0012 Card content](../decisions/0012-make-both-cards-practise-the-chunk.md)
+- [0049 Drop the translation card](../decisions/0049-drop-the-translation-card-and-the-hint-language.md)
 - [AnkiConnect](../integrations/ankiconnect.md)

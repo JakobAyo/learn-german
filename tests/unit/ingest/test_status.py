@@ -56,7 +56,7 @@ def test_status_lists_recent_sources_newest_first_with_occurrences(
     )
 
 
-def test_status_ranks_pending_chunks_like_sync_and_counts_partial_ones(
+def test_status_ranks_pending_chunks_like_sync_without_done_ones(
     uow: SqliteUnitOfWork, status: ShowStatus
 ) -> None:
     add_all(uow)
@@ -70,11 +70,11 @@ def test_status_ranks_pending_chunks_like_sync_and_counts_partial_ones(
 
     report = status.run(top=3)
 
-    assert (report.pending, report.partial) == (3, 1)
+    assert (report.pending, report.partial) == (3, 0)
     assert [(chunk.key.value, chunk.occurrences) for chunk in report.top_chunks] == [
-        ("kritik|üben", 1),
         ("entscheidung|treffen", 3),
         ("stellung|nehmen", 1),
+        ("verfügung|zu|stellen", 1),
     ]
 
 

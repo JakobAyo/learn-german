@@ -14,7 +14,7 @@ from learn_german.adapters.llm import PROMPT_VERSION, load_template, render_prom
 from tests.unit.generation.builders import REQUEST, request
 
 DATA = Path(__file__).parent.parent.parent / "data" / "llm"
-GOLDEN_FILE = DATA / "card_v1_prompt.golden.txt"
+GOLDEN_FILE = DATA / "card_v2_prompt.golden.txt"
 HASHES_FILE = DATA / "prompt_hashes.json"
 
 
@@ -42,9 +42,9 @@ def test_empty_context_renders_as_none() -> None:
 
 
 def test_sentence_and_context_are_inserted_verbatim() -> None:
-    rendered = render_prompt("$sentence|$context|$key|$hint_language", REQUEST)
+    rendered = render_prompt("$sentence|$context|$key", REQUEST)
 
-    assert rendered == f"{REQUEST.sentence}|{REQUEST.context}|entscheidung|treffen|en"
+    assert rendered == f"{REQUEST.sentence}|{REQUEST.context}|entscheidung|treffen"
 
 
 def test_dollar_signs_in_the_request_are_kept() -> None:
@@ -58,6 +58,13 @@ def test_unknown_placeholder_raises() -> None:
         render_prompt("$unknown", REQUEST)
 
 
+def test_the_prompt_no_longer_asks_for_a_translation() -> None:
+    template = load_template()
+
+    assert "$hint_language" not in template
+    assert "translation" not in template
+
+
 def test_unknown_version_raises() -> None:
     with pytest.raises(KeyError):
-        load_template("card-v0")
+        load_template("card-v1")

@@ -2,7 +2,7 @@
 title: Testing strategy
 summary: Test layers from pure unit to manual release checks, fakes and contract tests, the no-network and synthetic-fixture rules, and coverage targets.
 status: draft
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Testing strategy
@@ -40,9 +40,9 @@ States what is tested at which layer and with which doubles, so tests stay fast,
 | Extractor change silently loses NVVs | Golden-corpus precision and recall must not drop below the recorded baseline |
 | Note type fields change without a migration (0003) | Frozen spec test asserts v1 field names and order literally |
 | Prompt changes but the cache serves old output (0004) | Template hash recorded per `PROMPT_VERSION`; a mismatch fails |
-| Duplicate notes on re-run (R11) | E2E: running `sync` twice adds nothing; missing second note is created alone |
+| Duplicate notes on re-run (R11) | E2E: running `sync` twice adds nothing |
 | Progress lost on failure (0014) | E2E: one failing chunk leaves the others pushed and itself pending with its error |
-| Money spent before a fatal error | E2E: Anki unreachable or missing hint language stops before any LLM call |
+| Money spent before a fatal error | E2E: Anki unreachable or missing API key stops before any LLM call |
 | A fetch ignores robots.txt (0013) | Integration test asserts a disallowed article URL is never requested |
 | Re-adding or re-extracting loses note history (0017) | The four reextract rules as one parametrised test; `--force` follows the same rules |
 | A layer imports an adapter | import-linter contracts in CI |

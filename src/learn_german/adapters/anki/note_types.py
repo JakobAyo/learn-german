@@ -67,15 +67,7 @@ TRANSFORMATION_V1: Final = NoteTypeSpec(
     css=_CSS,
 )
 
-TRANSLATION_V1: Final = NoteTypeSpec(
-    name="learn-german-translation-v1",
-    note_kind=NoteKind.TRANSLATION,
-    fields=(*_SHARED_FIELDS, "Prompt", "HintLanguage"),
-    templates=(_card("Translation", "translation_v1"),),
-    css=_CSS,
-)
-
 NOTE_TYPES: Final[Mapping[NoteKind, NoteTypeSpec]] = MappingProxyType(
-    {spec.note_kind: spec for spec in (TRANSFORMATION_V1, TRANSLATION_V1)}
+    {spec.note_kind: spec for spec in (TRANSFORMATION_V1,)}
 )
 """The current note type of each note kind."""

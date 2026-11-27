@@ -6,7 +6,6 @@ from learn_german.adapters.anki.gateway import AnkiConnectGateway
 from learn_german.adapters.anki.note_types import (
     NOTE_TYPES,
     TRANSFORMATION_V1,
-    TRANSLATION_V1,
     CardTemplate,
     NoteTypeSpec,
 )
@@ -15,7 +14,6 @@ __all__ = [
     "API_VERSION",
     "NOTE_TYPES",
     "TRANSFORMATION_V1",
-    "TRANSLATION_V1",
     "AnkiActionError",
     "AnkiConnectClient",
     "AnkiConnectGateway",
